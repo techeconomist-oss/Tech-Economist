@@ -1,240 +1,217 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Citation Manager — Tech Economist</title>
-<style>
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{--navy:#0f2744;--navy-mid:#1a3a5c;--gold:#c8973a;--gold-lt:#e8b55a;--gold-pale:#fdf3e3;--w:#fff;--g50:#f8f9fb;--g100:#eef0f4;--g200:#dde1e9;--g400:#9aa3b0;--g600:#5a6475;--g800:#2c3340;--green:#2a6e4e;--green-lt:#e6f4ed;--red:#922b21;--red-lt:#fdecea;--blue:#1a4f8a;--blue-lt:#e8f0fb;--r:8px;--rl:12px;--shadow:0 4px 12px rgba(0,0,0,.10);--shadow-sm:0 1px 3px rgba(0,0,0,.08)}
-body{font-family:'Segoe UI',-apple-system,sans-serif;background:var(--g50);color:var(--g800);font-size:14px;line-height:1.55;min-height:100vh}
-.site-header{background:var(--navy);border-bottom:3px solid var(--gold);box-shadow:var(--shadow);position:sticky;top:0;z-index:100}
-.header-inner{max-width:1200px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px}
-.brand{display:flex;align-items:center;gap:12px;text-decoration:none;color:#fff}
-.brand-icon{width:38px;height:38px;background:var(--gold);border-radius:8px;display:flex;align-items:center;justify-content:center}
-.brand-icon svg{width:22px;height:22px}
-.brand-name{font-size:17px;font-weight:700;color:#fff}
-.brand-tag{font-size:11px;color:var(--gold-lt)}
-.header-tool{font-size:12px;color:rgba(255,255,255,.55);text-align:right}
-.header-tool strong{display:block;color:rgba(255,255,255,.85);font-size:13px;font-weight:600}
-.page-body{max-width:900px;margin:0 auto;padding:28px 24px 60px}
-.hero{background:linear-gradient(135deg,var(--navy),var(--navy-mid));border-radius:var(--rl);padding:28px 32px;margin-bottom:24px;color:#fff;box-shadow:var(--shadow)}
-.hero-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(200,151,58,.18);border:1px solid rgba(200,151,58,.35);border-radius:20px;padding:3px 12px;font-size:11px;color:var(--gold-lt);font-weight:600;letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px}
-.hero h1{font-size:24px;font-weight:700;margin-bottom:6px}
-.hero p{font-size:13px;color:rgba(255,255,255,.65);max-width:600px;line-height:1.6}
-.card{background:var(--w);border:1px solid var(--g200);border-radius:var(--rl);padding:22px 24px;margin-bottom:18px;box-shadow:var(--shadow-sm)}
-.card-hdr{display:flex;align-items:center;gap:10px;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--g100)}
-.card-hdr .step{width:22px;height:22px;background:var(--navy);color:#fff;border-radius:50%;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center}
-.card-title{font-size:14px;font-weight:700;color:var(--navy)}
-.card-desc{font-size:12px;color:var(--g400);margin-top:1px}
-textarea{width:100%;min-height:120px;padding:12px;border:1.5px solid var(--g200);border-radius:var(--r);font-size:13px;font-family:inherit;color:var(--g800);resize:vertical;transition:border .15s}
-textarea:focus{outline:none;border-color:var(--navy);box-shadow:0 0 0 3px rgba(15,39,68,.08)}
-.hint{font-size:11px;color:var(--g400);margin-top:6px;line-height:1.6}
-.run-btn{width:100%;padding:13px;font-size:14px;font-weight:700;background:var(--navy);color:#fff;border:none;border-radius:var(--r);cursor:pointer;transition:all .18s;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:14px}
-.run-btn:hover{background:var(--navy-mid);box-shadow:var(--shadow)}
-.run-btn:disabled{opacity:.45;cursor:not-allowed}
-.results-area{margin-top:18px}
-.ref-card{background:var(--w);border:1px solid var(--g200);border-radius:var(--rl);margin-bottom:14px;overflow:hidden;box-shadow:var(--shadow-sm)}
-.ref-card-hdr{padding:12px 16px;border-bottom:1px solid var(--g100);display:flex;align-items:center;justify-content:space-between;gap:8px}
-.ref-num{font-size:11px;font-weight:700;color:var(--g400)}
-.ref-source{font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px;letter-spacing:.05em}
-.ref-source.oa{background:var(--blue-lt);color:var(--blue)}
-.ref-source.cr{background:var(--gold-pale);color:var(--gold)}
-.ref-source.parsed{background:var(--g100);color:var(--g600)}
-.ref-body{padding:16px}
-.ref-title{font-size:14px;font-weight:700;color:var(--navy);margin-bottom:4px;line-height:1.4}
-.ref-authors{font-size:12px;color:var(--g600);margin-bottom:6px}
-.ref-venue{font-size:12px;color:var(--g400);font-style:italic;margin-bottom:10px}
-.cite-tabs{display:flex;gap:0;border-bottom:1px solid var(--g200);margin-bottom:10px}
-.cite-tab{padding:6px 12px;font-size:11px;font-weight:600;color:var(--g400);cursor:pointer;border:none;background:none;font-family:inherit;border-bottom:2px solid transparent;transition:all .15s}
-.cite-tab:hover{color:var(--navy)}
-.cite-tab.active{color:var(--navy);border-bottom-color:var(--gold)}
-.cite-out{background:var(--g50);border:1px solid var(--g200);border-radius:var(--r);padding:12px 14px;font-size:12px;color:var(--g800);line-height:1.7;font-family:'Segoe UI',sans-serif;position:relative;min-height:40px}
-.cite-out .copy-btn{position:absolute;top:6px;right:6px;font-size:10px;font-weight:600;padding:3px 10px;border:1px solid var(--g200);border-radius:4px;background:var(--w);color:var(--g600);cursor:pointer;transition:all .12s}
-.cite-out .copy-btn:hover{background:var(--navy);color:#fff;border-color:var(--navy)}
-.spinner{width:20px;height:20px;border:2.5px solid var(--g200);border-top-color:var(--navy);border-radius:50%;animation:sp .7s linear infinite;margin:20px auto}
-@keyframes sp{to{transform:rotate(360deg)}}
-.alert{padding:11px 14px;border-radius:var(--r);font-size:13px;margin-bottom:14px}
-.alert.info{background:var(--blue-lt);color:var(--blue);border:1px solid rgba(26,79,138,.15)}
-.alert.err{background:var(--red-lt);color:var(--red);border:1px solid rgba(146,43,33,.15)}
-.site-footer{background:var(--navy);border-top:3px solid var(--gold);padding:28px 24px 20px}
-.footer-inner{max-width:1200px;margin:0 auto}
-.footer-copy{font-size:12px;color:rgba(255,255,255,.4)}
-.footer-copy a{color:var(--gold);text-decoration:none}
-@media(max-width:640px){.header-inner{flex-wrap:wrap}.hero{padding:20px}}
-</style>
-</head>
-<body>
+// ─────────────────────────────────────────────
+//  Citation Manager — Google Apps Script
+//  Code.gs  v3 — Two-step search + parseRefText fallback
+// ─────────────────────────────────────────────
 
-<header class="site-header">
-<div class="header-inner">
-<a class="brand" href="index.html">
-<div class="brand-icon"><svg viewBox="0 0 22 22" fill="none"><path d="M3 17L8 11L12 14L19 5" stroke="#0f2744" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="19" cy="5" r="2" fill="#0f2744"/></svg></div>
-<div><div class="brand-name">Tech Economist</div><div class="brand-tag">Economics · Data · Technology · Research</div></div>
-</a>
-<div class="header-tool"><strong>Citation Manager</strong>OpenAlex · CrossRef · 6 Styles</div>
-</div>
-</header>
+function doGet(e) {
+  return HtmlService.createHtmlOutputFromFile('index')
+    .setTitle('Citation Manager — Tech Economist')
+    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+}
 
-<main class="page-body">
-<div class="hero">
-<div class="hero-badge">📚 Reference Tool</div>
-<h1>Citation Manager</h1>
-<p>Paste references, DOIs, or titles. The tool searches OpenAlex and CrossRef APIs to retrieve full metadata, then formats citations in APA, MLA, Chicago, Harvard, Vancouver, and IEEE styles.</p>
-</div>
+// ── SCORE metadata quality ────────────────────
+function scoreResult(m) {
+  if (!m) return 0;
+  var s = 0;
+  if (m.authors && m.authors.length > 0) s += 30;
+  if (m.year)   s += 15;
+  if (m.title)  s += 15;
+  if (m.venue)  s += 15;
+  if (m.vol)    s += 8;
+  if (m.iss)    s += 5;
+  if (m.pages)  s += 7;
+  if (m.doi)    s += 5;
+  return s;
+}
 
-<div class="card">
-<div class="card-hdr">
-<div class="step">1</div>
-<div><div class="card-title">Paste References</div><div class="card-desc">One reference per line — DOIs, titles, or full citation text</div></div>
-</div>
-<textarea id="refInput" placeholder="Paste references here, one per line. Examples:&#10;&#10;10.1016/j.foodpol.2019.101773&#10;Balassa, B. (1965). Trade liberalisation and revealed comparative advantage.&#10;Impact of climate change on Indian agriculture"></textarea>
-<div class="hint">Supports DOI lookup, title search, and raw reference parsing. All API calls go directly to OpenAlex and CrossRef — no server-side processing.</div>
-<button class="run-btn" id="runBtn" onclick="processRefs()">
-<svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 2v9M8 11L5 8M8 11l3-3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-Look Up &amp; Format Citations
-</button>
-</div>
+// ── PARSE OpenAlex response ───────────────────
+function parseOA(w) {
+  var authors = (w.authorships || []).map(function(a) {
+    var name = (a.author && a.author.display_name) ? a.author.display_name : '';
+    var parts = name.trim().split(/\s+/);
+    var last  = parts.length > 1 ? parts[parts.length - 1] : name;
+    var first = parts.length > 1 ? parts.slice(0, -1).join(' ') : '';
+    var initials = first ? first.split(/\s+/).map(function(p){ return p[0] ? p[0].toUpperCase() + '.' : ''; }).join(' ') : '';
+    return { last: last, first: first, initials: initials, full: name };
+  });
+  var biblio = w.biblio || {};
+  var pages = (biblio.first_page && biblio.last_page)
+    ? biblio.first_page + '\u2013' + biblio.last_page
+    : (biblio.first_page || '');
+  var venue = '';
+  if (w.primary_location && w.primary_location.source)
+    venue = w.primary_location.source.display_name || '';
+  if (!venue && w.best_oa_location && w.best_oa_location.source)
+    venue = w.best_oa_location.source.display_name || '';
+  return {
+    authors: authors, title: w.title || '', year: w.publication_year || '',
+    venue: venue, vol: biblio.volume || '', iss: biblio.issue || '', pages: pages,
+    doi: w.doi ? w.doi.replace('https://doi.org/', '') : '', source: 'OpenAlex', step: 2
+  };
+}
 
-<div id="results" class="results-area"></div>
-</main>
+// ── PARSE CrossRef response ───────────────────
+function parseCR(w) {
+  var authors = (w.author || []).map(function(a) {
+    var first = a.given || '', last = a.family || '';
+    var initials = first ? first.split(/\s+/).map(function(p){ return p[0] ? p[0].toUpperCase() + '.' : ''; }).join(' ') : '';
+    return { last: last, first: first, initials: initials, full: (first + ' ' + last).trim() };
+  });
+  var page = w.page || '', pageParts = page.split(/[-\u2013]/);
+  var pages = (pageParts[0] && pageParts[1]) ? pageParts[0] + '\u2013' + pageParts[1] : page;
+  var year = '';
+  if (w.published && w.published['date-parts'] && w.published['date-parts'][0])
+    year = w.published['date-parts'][0][0];
+  if (!year && w['published-print'] && w['published-print']['date-parts'] && w['published-print']['date-parts'][0])
+    year = w['published-print']['date-parts'][0][0];
+  return {
+    authors: authors, title: (w.title && w.title[0]) ? w.title[0] : '', year: year || '',
+    venue: (w['container-title'] && w['container-title'][0]) ? w['container-title'][0] : '',
+    vol: w.volume || '', iss: w.issue || '', pages: pages,
+    doi: w.DOI || '', source: 'CrossRef', step: 2
+  };
+}
 
-<footer class="site-footer">
-<div class="footer-inner">
-<div class="footer-copy">&copy; 2026 <strong style="color:rgba(255,255,255,.65)">Tech Economist</strong> · <a href="https://techeconomist.in" target="_blank">techeconomist.in</a> · All computations run locally in your browser.</div>
-</div>
-</footer>
-
-<script>
-// ══ HELPERS ══
-function extractDOI(ref){var m=ref.match(/(?:https?:\/\/doi\.org\/|doi:\s*)(10\.[^\s,\]>"'{}\\]+)/i);if(m)return m[1].replace(/[.)\s]+$/,'');var m2=ref.match(/\b(10\.\d{4,}\/[^\s,\]>"'{}\\]+)/);return m2?m2[1].replace(/[.)\s]+$/,''):null}
-function extractYear(ref){var m=ref.match(/\b(19|20)\d{2}\b/);return m?m[0]:null}
-function extractAuthorLast(ref){var m=ref.match(/^([A-Z][a-zA-Z'\u00C0-\u024F\-]{2,})/);return m?m[1].toLowerCase().replace(/[^a-z]/g,''):''}
-
-function scoreResult(m){if(!m)return 0;var s=0;if(m.authors&&m.authors.length)s+=30;if(m.year)s+=15;if(m.title)s+=15;if(m.venue)s+=15;if(m.vol)s+=8;if(m.iss)s+=5;if(m.pages)s+=7;if(m.doi)s+=5;return s}
-
-function verifyMatch(meta,origAuthor,origYear){
-  if(!meta)return false;
-  if(origYear&&meta.year&&Math.abs(parseInt(meta.year)-parseInt(origYear))>2)return false;
-  if(origAuthor&&origAuthor.length>3&&meta.authors&&meta.authors.length>0){
-    var metaLast=meta.authors[0].last.toLowerCase().replace(/[^a-z]/g,'');
-    if(metaLast.length>3){var a4=origAuthor.substring(0,4),b4=metaLast.substring(0,4);if(metaLast.indexOf(a4)===-1&&origAuthor.indexOf(b4)===-1)return false}
+// ── PARSE reference text directly (fallback) ──
+function parseRefText(ref) {
+  var doiM = ref.match(/(?:https?:\/\/doi\.org\/|doi:\s*)(10\.[^\s,\]>"'{}\\]+)/i);
+  var doi = doiM ? doiM[1].replace(/[.)\s]+$/, '') : '';
+  var yearM = ref.match(/\b(19|20)\d{2}\b/);
+  var year = yearM ? yearM[0] : 'n.d.';
+  var yearPos = yearM ? yearM.index : ref.length;
+  var authorBlock = ref.substring(0, yearPos).trim().replace(/[.,( ]+$/, '');
+  authorBlock = authorBlock.replace(/\s*[&]\s*/g, ', ').replace(/\s+and\s+/gi, ', ');
+  var authors = [];
+  var authorRe = /([A-Z][a-z\u00C0-\u024F'\-]+(?:\s+[A-Z][a-z\u00C0-\u024F'\-]+)*),?\s+([A-Z][.\s]*(?:[A-Z]\.?\s*)*)(?=[,;]|$)/g;
+  var am;
+  while ((am = authorRe.exec(authorBlock)) !== null) {
+    var last = am[1].trim();
+    var rawIni = am[2].trim();
+    var iniLetters = rawIni.match(/[A-Z]/g) || [];
+    var initials = iniLetters.join('.') + (iniLetters.length ? '.' : '');
+    authors.push({ last: last, first: rawIni, initials: initials, full: last + ', ' + initials });
   }
-  return true
+  if (!authors.length) {
+    var fb = authorBlock.split(',')[0].trim();
+    if (fb) authors.push({ last: fb, first: '', initials: '', full: fb });
+  }
+  var afterYear = ref.substring(yearPos + year.length).replace(/^[\s).]+/, '');
+  var titleM = afterYear.match(/^([A-Z*\[][^.]{5,180}?)\./);
+  var title = titleM ? titleM[1].trim() : afterYear.split('.')[0].trim();
+  title = title.replace(/\s*\([^)]*(?:ed|edition|edn)[^)]*\)/i, '').trim();
+  var afterTitle = afterYear.substring(title.length + 1).replace(/https?:\/\/\S+/g, '').trim().replace(/[.,]+$/, '');
+  var pubM = afterTitle.match(/^([^:,.\n]+)/);
+  var publisher = pubM ? pubM[1].trim() : '';
+  return { authors: authors, year: year, title: title, venue: publisher,
+           vol: '', iss: '', pages: '', doi: doi, source: 'Parsed', step: 0 };
 }
 
-function parseOA(w){
-  var authors=(w.authorships||[]).map(function(a){var name=(a.author&&a.author.display_name)||'';var parts=name.trim().split(/\s+/);var last=parts.length>1?parts[parts.length-1]:name;var first=parts.length>1?parts.slice(0,-1).join(' '):'';var initials=first?first.split(/\s+/).map(function(p){return p[0]?p[0].toUpperCase()+'.':''}).join(' '):'';return{last:last,first:first,initials:initials,full:name}});
-  var biblio=w.biblio||{};var pages=(biblio.first_page&&biblio.last_page)?biblio.first_page+'\u2013'+biblio.last_page:(biblio.first_page||'');
-  var venue='';if(w.primary_location&&w.primary_location.source)venue=w.primary_location.source.display_name||'';
-  return{authors:authors,title:w.title||'',year:w.publication_year||'',venue:venue,vol:biblio.volume||'',iss:biblio.issue||'',pages:pages,doi:w.doi?w.doi.replace('https://doi.org/',''):'',source:'OpenAlex'}
+// ── EXTRACT helpers ───────────────────────────
+function extractDOI(ref) {
+  var m = ref.match(/(?:https?:\/\/doi\.org\/|doi:\s*)(10\.[^\s,\]>"'{}\\]+)/i);
+  if (m) return m[1].replace(/[.)\s]+$/, '');
+  var m2 = ref.match(/\b(10\.\d{4,}\/[^\s,\]>"'{}\\]+)/);
+  return m2 ? m2[1].replace(/[.)\s]+$/, '') : null;
+}
+function extractFirstAuthorLast(ref) {
+  var m = ref.match(/^([A-Z][a-zA-Z'\u00C0-\u024F\-]{2,})/);
+  return m ? m[1].toLowerCase().replace(/[^a-z]/g, '') : '';
+}
+function extractRefYear(ref) {
+  var m = ref.match(/\b(19|20)\d{2}\b/);
+  return m ? parseInt(m[0]) : null;
 }
 
-function parseCR(w){
-  var authors=(w.author||[]).map(function(a){var first=a.given||'',last=a.family||'';var initials=first?first.split(/\s+/).map(function(p){return p[0]?p[0].toUpperCase()+'.':''}).join(' '):'';return{last:last,first:first,initials:initials,full:(first+' '+last).trim()}});
-  var page=w.page||'',pp=page.split(/[-\u2013]/);var pages=(pp[0]&&pp[1])?pp[0]+'\u2013'+pp[1]:page;
-  var year='';if(w.published&&w.published['date-parts']&&w.published['date-parts'][0])year=w.published['date-parts'][0][0];
-  if(!year&&w['published-print']&&w['published-print']['date-parts']&&w['published-print']['date-parts'][0])year=w['published-print']['date-parts'][0][0];
-  return{authors:authors,title:(w.title&&w.title[0])?w.title[0]:'',year:year||'',venue:(w['container-title']&&w['container-title'][0])?w['container-title'][0]:'',vol:w.volume||'',iss:w.issue||'',pages:pages,doi:w.DOI||'',source:'CrossRef'}
-}
-
-function parseRefText(ref){
-  var doi=extractDOI(ref)||'';var year=extractYear(ref)||'n.d.';
-  var yearPos=ref.indexOf(year);if(yearPos<0)yearPos=ref.length;
-  var authorBlock=ref.substring(0,yearPos).trim().replace(/[.,( ]+$/,'');
-  var authors=[];var am,re=/([A-Z][a-z\u00C0-\u024F'\-]+(?:\s+[A-Z][a-z\u00C0-\u024F'\-]+)*),?\s+([A-Z][.\s]*(?:[A-Z]\.?\s*)*)(?=[,;]|$)/g;
-  while((am=re.exec(authorBlock))!==null){var last=am[1].trim(),rawIni=am[2].trim(),iniLetters=rawIni.match(/[A-Z]/g)||[];var initials=iniLetters.join('.')+(iniLetters.length?'.':'');authors.push({last:last,first:rawIni,initials:initials,full:last+', '+initials})}
-  if(!authors.length){var fb=authorBlock.split(',')[0].trim();if(fb)authors.push({last:fb,first:'',initials:'',full:fb})}
-  var afterYear=ref.substring(yearPos+year.length).replace(/^[\s).]+/,'');
-  var titleM=afterYear.match(/^([A-Z*\[][^.]{5,180}?)\./);var title=titleM?titleM[1].trim():afterYear.split('.')[0].trim();
-  var afterTitle=afterYear.substring(title.length+1).replace(/https?:\/\/\S+/g,'').trim().replace(/[.,]+$/,'');
-  var pubM=afterTitle.match(/^([^:,.\n]+)/);var venue=pubM?pubM[1].trim():'';
-  return{authors:authors,year:year,title:title,venue:venue,vol:'',iss:'',pages:'',doi:doi,source:'Parsed'}
-}
-
-// ══ API CALLS ══
-async function lookupDOI(doi,origAuthor,origYear,refText){
-  try{
-    var res=await fetch('https://api.crossref.org/works/'+encodeURIComponent(doi)+'?mailto=techeconomist@research.org');
-    if(res.ok){var data=await res.json();if(data.message){var m=parseCR(data.message);if(verifyMatch(m,origAuthor,parseInt(origYear)))return m;var parsed=parseRefText(refText);parsed.doi=doi;parsed.source='CrossRef+Parsed';return parsed}}
-  }catch(e){}
-  return null
-}
-
-async function searchAPIs(refText,title){
-  var origAuthor=extractAuthorLast(refText||'');var origYear=extractYear(refText||'');var doi=extractDOI(refText||'');
-  if(doi){var doiMeta=await lookupDOI(doi,origAuthor,origYear?parseInt(origYear):null,refText);if(doiMeta)return doiMeta}
-  var searchTitle=(title||refText||'').substring(0,130);var oaMeta=null,crMeta=null;
-  try{
-    var oaRes=await fetch('https://api.openalex.org/works?search='+encodeURIComponent(searchTitle)+'&per-page=5&mailto=techeconomist@research.org');
-    if(oaRes.ok){var oaData=await oaRes.json();var items=oaData.results||[];for(var i=0;i<items.length;i++){var c=parseOA(items[i]);if(verifyMatch(c,origAuthor,origYear?parseInt(origYear):null)){oaMeta=c;break}}}
-  }catch(e){}
-  try{
-    var crRes=await fetch('https://api.crossref.org/works?query.bibliographic='+encodeURIComponent(searchTitle)+'&rows=5&mailto=techeconomist@research.org');
-    if(crRes.ok){var crData=await crRes.json();var items2=(crData.message&&crData.message.items)?crData.message.items:[];for(var j=0;j<items2.length;j++){var c2=parseCR(items2[j]);if(verifyMatch(c2,origAuthor,origYear?parseInt(origYear):null)){crMeta=c2;break}}}
-  }catch(e){}
-  if(oaMeta||crMeta){if(!oaMeta)return crMeta;if(!crMeta)return oaMeta;return scoreResult(oaMeta)>=scoreResult(crMeta)?oaMeta:crMeta}
-  return parseRefText(refText)
-}
-
-// ══ CITATION FORMATTERS ══
-function fmtAPA(m){var a=m.authors.map(function(x){return x.last+', '+x.initials}).join(', ');var s=a+' ('+m.year+'). '+m.title+'.';if(m.venue)s+=' <i>'+m.venue+'</i>';if(m.vol)s+=', <i>'+m.vol+'</i>';if(m.iss)s+='('+m.iss+')';if(m.pages)s+=', '+m.pages;s+='.';if(m.doi)s+=' https://doi.org/'+m.doi;return s}
-function fmtMLA(m){var a=m.authors.length?m.authors[0].last+', '+m.authors[0].first:'';if(m.authors.length>1)a+=', et al';var s=a+'. "'+m.title+'."';if(m.venue)s+=' <i>'+m.venue+'</i>';if(m.vol)s+=', vol. '+m.vol;if(m.iss)s+=', no. '+m.iss;s+=', '+m.year;if(m.pages)s+=', pp. '+m.pages;s+='.';return s}
-function fmtChicago(m){var a=m.authors.map(function(x){return x.last+', '+x.first}).join(', ');var s=a+'. "'+m.title+'."';if(m.venue)s+=' <i>'+m.venue+'</i>';if(m.vol)s+=' '+m.vol;if(m.iss)s+=', no. '+m.iss;s+=' ('+m.year+')';if(m.pages)s+=': '+m.pages;s+='.';return s}
-function fmtHarvard(m){var a=m.authors.map(function(x){return x.last+', '+x.initials}).join(', ');var s=a+' ('+m.year+') \''+m.title+'\',';if(m.venue)s+=' <i>'+m.venue+'</i>';if(m.vol)s+=', '+m.vol;if(m.iss)s+='('+m.iss+')';if(m.pages)s+=', pp. '+m.pages;s+='.';return s}
-function fmtVancouver(m){var a=m.authors.slice(0,6).map(function(x){return x.last+' '+x.initials.replace(/\s/g,'')}).join(', ');if(m.authors.length>6)a+=', et al';var s=a+'. '+m.title+'.';if(m.venue)s+=' '+m.venue;s+='. '+m.year;if(m.vol)s+=';'+m.vol;if(m.iss)s+='('+m.iss+')';if(m.pages)s+=':'+m.pages;s+='.';return s}
-function fmtIEEE(m){var a=m.authors.map(function(x){return x.initials.replace(/\s/g,'')+' '+x.last}).join(', ');var s=a+', "'+m.title+',"';if(m.venue)s+=' <i>'+m.venue+'</i>';if(m.vol)s+=', vol. '+m.vol;if(m.iss)s+=', no. '+m.iss;if(m.pages)s+=', pp. '+m.pages;s+=', '+m.year+'.';return s}
-
-var STYLES=[{id:'apa',label:'APA 7th',fn:fmtAPA},{id:'mla',label:'MLA 9th',fn:fmtMLA},{id:'chicago',label:'Chicago',fn:fmtChicago},{id:'harvard',label:'Harvard',fn:fmtHarvard},{id:'vancouver',label:'Vancouver',fn:fmtVancouver},{id:'ieee',label:'IEEE',fn:fmtIEEE}];
-
-// ══ MAIN ══
-async function processRefs(){
-  var input=document.getElementById('refInput').value.trim();
-  if(!input){return}
-  var lines=input.split('\n').map(function(l){return l.trim()}).filter(function(l){return l.length>3});
-  if(!lines.length)return;
-  var btn=document.getElementById('runBtn');
-  btn.disabled=true;btn.innerHTML='<div class="spinner" style="width:16px;height:16px;margin:0;border-width:2px;"></div> Processing '+lines.length+' reference(s)...';
-  var results=document.getElementById('results');
-  results.innerHTML='<div class="alert info">Searching OpenAlex &amp; CrossRef for '+lines.length+' reference(s)...</div>';
-  var html='';
-  for(var i=0;i<lines.length;i++){
-    try{
-      var meta=await searchAPIs(lines[i],null);
-      html+=renderRefCard(i+1,lines[i],meta);
-    }catch(e){
-      html+=renderRefCard(i+1,lines[i],parseRefText(lines[i]));
+// ── VERIFY match ──────────────────────────────
+function verifyMatch(meta, origAuthor, origYear) {
+  if (!meta) return false;
+  if (origYear && meta.year && Math.abs(parseInt(meta.year) - origYear) > 2) return false;
+  if (origAuthor && origAuthor.length > 3 && meta.authors && meta.authors.length > 0) {
+    var metaLast = meta.authors[0].last.toLowerCase().replace(/[^a-z]/g, '');
+    if (metaLast.length > 3) {
+      var a4 = origAuthor.substring(0, 4), b4 = metaLast.substring(0, 4);
+      if (metaLast.indexOf(a4) === -1 && origAuthor.indexOf(b4) === -1) return false;
     }
   }
-  results.innerHTML=html;
-  btn.disabled=false;btn.innerHTML='<svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 2v9M8 11L5 8M8 11l3-3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg> Look Up &amp; Format Citations';
+  return true;
 }
 
-function renderRefCard(num,original,meta){
-  var srcCls=meta.source==='OpenAlex'?'oa':meta.source==='CrossRef'?'cr':'parsed';
-  var authStr=meta.authors.map(function(a){return a.full}).join('; ')||'Unknown';
-  var venueStr=meta.venue?(meta.venue+(meta.vol?' '+meta.vol:'')+(meta.iss?'('+meta.iss+')':'')+(meta.pages?', '+meta.pages:'')):'';
-  var citeTabs=STYLES.map(function(s,si){return '<button class="cite-tab'+(si===0?' active':'')+'" onclick="switchCiteTab('+num+',\''+s.id+'\',this)">'+s.label+'</button>'}).join('');
-  var citeContents=STYLES.map(function(s,si){return '<div id="cite-'+num+'-'+s.id+'" style="display:'+(si===0?'block':'none')+'"><div class="cite-out"><button class="copy-btn" onclick="copyCite('+num+',\''+s.id+'\')">Copy</button>'+s.fn(meta)+'</div></div>'}).join('');
-  return '<div class="ref-card"><div class="ref-card-hdr"><span class="ref-num">#'+num+'</span><span class="ref-source '+srcCls+'">'+meta.source+(meta.doi?' · DOI ✓':'')+'</span></div><div class="ref-body"><div class="ref-title">'+esc(meta.title)+'</div><div class="ref-authors">'+esc(authStr)+'</div>'+(venueStr?'<div class="ref-venue">'+esc(venueStr)+' ('+meta.year+')</div>':'<div class="ref-venue">'+meta.year+'</div>')+'<div class="cite-tabs">'+citeTabs+'</div>'+citeContents+'</div></div>'
+// ── DOI direct lookup ─────────────────────────
+function lookupByDOI(doi, origAuthor, origYear, refText) {
+  try {
+    var url = 'https://api.crossref.org/works/' + encodeURIComponent(doi)
+              + '?mailto=techeconomist@research.org';
+    var res = UrlFetchApp.fetch(url, { muteHttpExceptions: true });
+    if (res.getResponseCode() === 200) {
+      var data = JSON.parse(res.getContentText());
+      if (data.message) {
+        var m = parseCR(data.message);
+        m.step = 1;
+        // If author/year mismatch (e.g. CrossRef returned a book review) — parse text directly
+        if (!verifyMatch(m, origAuthor, origYear)) {
+          var parsed = parseRefText(refText);
+          parsed.doi = doi;
+          parsed.step = 1;
+          parsed.source = 'CrossRef+Parsed';
+          return parsed;
+        }
+        return m;
+      }
+    }
+  } catch(e) { /* silent */ }
+  return null;
 }
 
-function switchCiteTab(num,style,btn){
-  var parent=btn.closest('.ref-body');
-  parent.querySelectorAll('.cite-tab').forEach(function(t){t.classList.remove('active')});
-  btn.classList.add('active');
-  STYLES.forEach(function(s){var el=document.getElementById('cite-'+num+'-'+s.id);if(el)el.style.display=s.id===style?'block':'none'});
-}
+// ── MAIN: called from browser ─────────────────
+function searchAPIs(refText, title) {
+  var origAuthor = extractFirstAuthorLast(refText || '');
+  var origYear   = extractRefYear(refText || '');
+  var doi        = extractDOI(refText || '');
 
-function copyCite(num,style){
-  var el=document.getElementById('cite-'+num+'-'+style);
-  if(!el)return;var text=el.querySelector('.cite-out').innerText.replace('Copy','').trim();
-  navigator.clipboard.writeText(text).then(function(){
-    var btn=el.querySelector('.copy-btn');if(btn){btn.textContent='Copied!';setTimeout(function(){btn.textContent='Copy'},1500)}
-  })
-}
+  // Strategy 1: DOI lookup
+  if (doi) {
+    var doiMeta = lookupByDOI(doi, origAuthor, origYear, refText);
+    if (doiMeta) return doiMeta;
+  }
 
-function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
-</script>
-</body>
-</html>
+  // Strategy 2: Title + author + year verified search
+  var searchTitle = (title || refText || '').substring(0, 130);
+  var oaMeta = null, crMeta = null;
+
+  try {
+    var oaUrl = 'https://api.openalex.org/works?search='
+      + encodeURIComponent(searchTitle) + '&per-page=5&mailto=techeconomist@research.org';
+    var oaRes = UrlFetchApp.fetch(oaUrl, { muteHttpExceptions: true });
+    if (oaRes.getResponseCode() === 200) {
+      var oaData = JSON.parse(oaRes.getContentText());
+      var items = oaData.results || [];
+      for (var i = 0; i < items.length; i++) {
+        var c = parseOA(items[i]);
+        if (verifyMatch(c, origAuthor, origYear)) { oaMeta = c; break; }
+      }
+    }
+  } catch(e) { /* silent */ }
+
+  try {
+    var crUrl = 'https://api.crossref.org/works?query.bibliographic='
+      + encodeURIComponent(searchTitle) + '&rows=5&mailto=techeconomist@research.org';
+    var crRes = UrlFetchApp.fetch(crUrl, { muteHttpExceptions: true });
+    if (crRes.getResponseCode() === 200) {
+      var crData = JSON.parse(crRes.getContentText());
+      var items2 = (crData.message && crData.message.items) ? crData.message.items : [];
+      for (var j = 0; j < items2.length; j++) {
+        var c2 = parseCR(items2[j]);
+        if (verifyMatch(c2, origAuthor, origYear)) { crMeta = c2; break; }
+      }
+    }
+  } catch(e) { /* silent */ }
+
+  if (oaMeta || crMeta) {
+    if (!oaMeta) return crMeta;
+    if (!crMeta) return oaMeta;
+    return scoreResult(oaMeta) >= scoreResult(crMeta) ? oaMeta : crMeta;
+  }
+
+  // Strategy 3: Fall back to parsing the reference text directly
+  return parseRefText(refText);
+}
