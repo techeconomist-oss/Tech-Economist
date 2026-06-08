@@ -20,8 +20,8 @@ body{font-family:var(--sans);color:var(--ink);background:var(--w-sec);line-heigh
 .wrap{max-width:1200px;margin:0 auto;padding:0 24px}
 
 /* ═══ HEADER ═══ */
-.header{position:fixed;top:0;left:0;right:0;z-index:1000;padding:14px 0;transition:all .4s cubic-bezier(.4,0,.2,1)}
-.header.scrolled{background:rgba(11,17,32,.75);backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);border-bottom:1px solid rgba(255,255,255,.06);padding:9px 0}
+.header{position:fixed;top:0;left:0;right:0;z-index:1000;padding:12px 0;background:rgba(11,17,32,.85);backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);border-bottom:1px solid rgba(255,255,255,.06);transition:all .4s cubic-bezier(.4,0,.2,1)}
+.header.scrolled{background:rgba(11,17,32,.92);padding:9px 0}
 .header-inner{display:flex;align-items:center;justify-content:space-between}
 .logo{display:flex;align-items:center;gap:10px;text-decoration:none;color:#fff}
 .logo-gem{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--accent),#a78bfa);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(124,92,252,.3)}
