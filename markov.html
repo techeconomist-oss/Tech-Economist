@@ -1,0 +1,1786 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Markov Chain Trade Analyser — Tech Economist</title>
+<link rel="stylesheet" href="style.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --navy:      #0f2744;
+  --navy-mid:  #1a3a5c;
+  --navy-lt:   #224a73;
+  --gold:      #c8973a;
+  --gold-lt:   #e8b55a;
+  --gold-pale: #fdf3e3;
+  --white:     #ffffff;
+  --gray-50:   #f8f9fb;
+  --gray-100:  #eef0f4;
+  --gray-200:  #dde1e9;
+  --gray-400:  #9aa3b0;
+  --gray-600:  #5a6475;
+  --gray-800:  #2c3340;
+  --green:     #2a6e4e;
+  --green-lt:  #e6f4ed;
+  --red:       #922b21;
+  --red-lt:    #fdecea;
+  --blue:      #1a4f8a;
+  --blue-lt:   #e8f0fb;
+  --amber:     #7a5200;
+  --amber-lt:  #fef7e0;
+  --radius:    8px;
+  --radius-lg: 12px;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
+  --shadow:    0 4px 12px rgba(0,0,0,0.10);
+  --shadow-lg: 0 8px 24px rgba(0,0,0,0.12);
+}
+
+body {
+  font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--gray-50);
+  color: var(--gray-800);
+  font-size: 14px;
+  line-height: 1.55;
+  min-height: 100vh;
+}
+
+/* ── TOAST ── */
+#toast-container {
+  position: fixed; top: 80px; right: 24px; z-index: 9999;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.toast {
+  background: var(--navy); color: var(--white);
+  padding: 12px 20px; border-radius: var(--radius);
+  font-size: 13px; font-weight: 600;
+  box-shadow: var(--shadow-lg);
+  border-left: 4px solid var(--gold);
+  display: flex; align-items: center; gap: 10px;
+  animation: slideIn 0.3s ease, fadeOut 0.4s ease 2.6s forwards;
+  max-width: 320px;
+}
+.toast.success { border-left-color: var(--green); }
+.toast.info    { border-left-color: var(--blue); }
+.toast svg { width: 16px; height: 16px; flex-shrink: 0; }
+@keyframes slideIn  { from { transform: translateX(120%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+@keyframes fadeOut  { from { opacity: 1; } to { opacity: 0; pointer-events: none; } }
+
+/* ── HEADER ── */
+.site-header {
+  background: var(--navy);
+  border-bottom: 3px solid var(--gold);
+  box-shadow: var(--shadow);
+  position: sticky; top: 0; z-index: 100;
+}
+.header-inner {
+  max-width: 1400px; margin: 0 auto;
+  padding: 14px 24px;
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+}
+.brand { display: flex; align-items: center; gap: 12px; text-decoration: none; cursor: pointer; }
+.brand-icon {
+  width: 38px; height: 38px; background: var(--gold);
+  border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.brand-icon svg { width: 22px; height: 22px; }
+.brand-name  { font-size: 17px; font-weight: 700; color: var(--white); letter-spacing: -0.2px; }
+.brand-tagline { font-size: 11px; color: var(--gold-lt); font-weight: 400; letter-spacing: 0.02em; }
+.header-tool-label { font-size: 12px; color: rgba(255,255,255,0.55); text-align: right; }
+.header-tool-label strong { display: block; color: rgba(255,255,255,0.85); font-size: 13px; font-weight: 600; }
+
+/* ── PAGE BODY ── */
+.page-body { max-width: 1400px; margin: 0 auto; padding: 28px 24px 60px; }
+
+/* ── TOOL HERO ── */
+.tool-hero {
+  background: linear-gradient(135deg, var(--navy) 0%, var(--navy-mid) 100%);
+  border-radius: var(--radius-lg); padding: 28px 32px; margin-bottom: 24px;
+  color: var(--white); display: flex; align-items: flex-start;
+  justify-content: space-between; gap: 24px;
+  box-shadow: var(--shadow); border: 1px solid var(--navy-lt);
+}
+.hero-left { flex: 1; }
+.hero-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: rgba(200,151,58,0.18); border: 1px solid rgba(200,151,58,0.35);
+  border-radius: 20px; padding: 3px 12px; font-size: 11px;
+  color: var(--gold-lt); font-weight: 600; letter-spacing: 0.06em;
+  text-transform: uppercase; margin-bottom: 10px;
+}
+.hero-title   { font-size: 24px; font-weight: 700; letter-spacing: -0.4px; margin-bottom: 6px; line-height: 1.2; }
+.hero-subtitle { font-size: 13px; color: rgba(255,255,255,0.65); max-width: 520px; line-height: 1.6; }
+.hero-chips { display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; }
+.hero-chip {
+  background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 6px; padding: 5px 14px; font-size: 12px;
+  color: rgba(255,255,255,0.80); font-weight: 500; white-space: nowrap; text-align: center;
+  cursor: pointer; transition: all 0.15s;
+}
+.hero-chip.active { background: var(--gold); border-color: var(--gold); color: var(--navy); font-weight: 700; }
+.hero-chip:hover:not(.active) { background: rgba(255,255,255,0.15); }
+
+/* ── TOOL SWITCHER ── */
+.tool-switcher {
+  display: flex; gap: 8px; margin-bottom: 20px; background: var(--white);
+  border: 1px solid var(--gray-200); border-radius: var(--radius-lg);
+  padding: 6px; box-shadow: var(--shadow-sm);
+}
+.tool-switch-btn {
+  flex: 1; padding: 10px 16px; border: none; border-radius: var(--radius);
+  font-family: inherit; font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: all 0.15s; color: var(--gray-600); background: transparent;
+}
+.tool-switch-btn.active { background: var(--navy); color: var(--white); box-shadow: var(--shadow-sm); }
+.tool-switch-btn:hover:not(.active) { background: var(--gray-100); color: var(--navy); }
+
+/* ── CARDS ── */
+.card {
+  background: var(--white); border: 1px solid var(--gray-200);
+  border-radius: var(--radius-lg); padding: 22px 24px;
+  margin-bottom: 18px; box-shadow: var(--shadow-sm);
+}
+.card-header {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--gray-100);
+}
+.card-icon {
+  width: 32px; height: 32px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  font-size: 16px;
+}
+.card-icon.navy  { background: var(--navy); }
+.card-icon.gold  { background: var(--gold-pale); border: 1px solid rgba(200,151,58,0.25); }
+.card-icon.green { background: var(--green-lt); }
+.card-icon.blue  { background: var(--blue-lt); border: 1px solid rgba(26,79,138,0.15); }
+.card-icon svg   { width: 16px; height: 16px; }
+.card-title { font-size: 14px; font-weight: 700; color: var(--navy); letter-spacing: -0.1px; }
+.card-desc  { font-size: 12px; color: var(--gray-400); margin-top: 1px; }
+
+/* ── STEP BADGE ── */
+.step-badge {
+  width: 22px; height: 22px; background: var(--navy); color: var(--white);
+  border-radius: 50%; font-size: 11px; font-weight: 700;
+  display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+
+/* ── UPLOAD ZONE ── */
+.upload-zone {
+  border: 2px dashed var(--gray-200); border-radius: var(--radius-lg);
+  padding: 36px 24px; text-align: center; cursor: pointer;
+  transition: all 0.18s; background: var(--gray-50);
+}
+.upload-zone:hover, .upload-zone.over { border-color: var(--navy); background: #f0f4fa; }
+.upload-icon-wrap {
+  width: 56px; height: 56px; background: var(--navy); border-radius: 14px;
+  display: flex; align-items: center; justify-content: center; margin: 0 auto 14px;
+}
+.upload-icon-wrap svg { width: 28px; height: 28px; color: var(--white); }
+.upload-title { font-size: 15px; font-weight: 700; color: var(--navy); margin-bottom: 4px; }
+.upload-hint  { font-size: 12px; color: var(--gray-400); }
+.upload-formats { display: inline-flex; gap: 6px; margin-top: 12px; }
+.fmt-badge {
+  background: var(--white); border: 1px solid var(--gray-200); border-radius: 4px;
+  padding: 2px 10px; font-size: 11px; font-weight: 600; color: var(--gray-600); letter-spacing: 0.04em;
+}
+
+/* ── METRICS ROW ── */
+.metrics-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 20px; }
+.metric-card {
+  background: var(--gray-50); border: 1px solid var(--gray-100);
+  border-radius: var(--radius); padding: 14px 16px; border-top: 3px solid var(--navy);
+}
+.metric-card .mc-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--gray-400); margin-bottom: 5px; }
+.metric-card .mc-val   { font-size: 24px; font-weight: 700; color: var(--navy); line-height: 1.1; }
+.metric-card .mc-sub   { font-size: 11px; color: var(--gray-400); margin-top: 3px; }
+.metric-card.gold-top  { border-top-color: var(--gold); }
+.metric-card.green-top { border-top-color: var(--green); }
+
+/* ── FORMS ── */
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px; }
+.form-row-3 { grid-template-columns: 1fr 1fr 1fr; }
+.field label {
+  display: block; font-size: 12px; font-weight: 700; color: var(--navy);
+  margin-bottom: 5px; letter-spacing: 0.02em;
+}
+.field select, .field input {
+  width: 100%; padding: 9px 12px; border: 1.5px solid var(--gray-200);
+  border-radius: var(--radius); font-size: 13px; font-family: inherit;
+  color: var(--gray-800); background: var(--white); cursor: pointer;
+  transition: border 0.15s; appearance: none;
+}
+.field select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%239aa3b0' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px;
+}
+.field select:focus, .field input:focus {
+  outline: none; border-color: var(--navy); box-shadow: 0 0 0 3px rgba(15,39,68,0.08);
+}
+.field .field-hint { font-size: 11px; color: var(--gray-400); margin-top: 4px; }
+
+/* ── CHECKBOX ITEMS ── */
+.check-grid { display: flex; flex-wrap: wrap; gap: 6px; }
+.check-item {
+  display: flex; align-items: center; gap: 7px; padding: 6px 12px;
+  background: var(--white); border: 1.5px solid var(--gray-200);
+  border-radius: 20px; cursor: pointer; font-size: 12px; font-weight: 600;
+  color: var(--gray-800); transition: all 0.12s;
+}
+.check-item:hover { border-color: var(--navy-lt); background: #f5f8fd; }
+.check-item input { accent-color: var(--navy); width: 13px; height: 13px; }
+.check-item.selected { border-color: var(--navy); background: #f0f4fa; color: var(--navy); }
+
+/* ── PERIOD ROWS ── */
+.period-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 14px; background: var(--gray-50);
+  border-radius: var(--radius); margin-bottom: 8px;
+  border: 1px solid var(--gray-200);
+}
+.period-row .pr-label { font-size: 12px; font-weight: 600; color: var(--navy); min-width: 70px; }
+.period-row .pr-hint  { font-size: 12px; color: var(--gray-400); }
+.period-row input[type=number] {
+  width: 80px; padding: 6px 8px; border: 1.5px solid var(--gray-200);
+  border-radius: 6px; font-size: 12px; font-family: monospace;
+}
+.period-rm-btn {
+  margin-left: auto; background: none; border: none;
+  color: var(--red); cursor: pointer; font-size: 16px; padding: 2px 6px;
+}
+
+/* ── BUTTONS ── */
+.run-btn {
+  width: 100%; padding: 13px; font-size: 14px; font-weight: 700;
+  background: var(--navy); color: var(--white); border: none;
+  border-radius: var(--radius); cursor: pointer; transition: all 0.18s;
+  font-family: inherit; letter-spacing: 0.02em;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.run-btn:hover   { background: var(--navy-lt); box-shadow: var(--shadow); }
+.run-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.run-btn.gold-btn { background: var(--gold); color: var(--navy); }
+.run-btn.gold-btn:hover { background: var(--gold-lt); }
+.ghost-btn {
+  padding: 7px 14px; font-size: 11px; font-weight: 600;
+  border: 1px solid var(--gray-200); border-radius: 20px;
+  background: var(--white); color: var(--gray-600); cursor: pointer;
+  transition: all 0.12s; font-family: inherit;
+}
+.ghost-btn:hover { background: var(--navy); color: var(--white); border-color: var(--navy); }
+
+/* ── RESULT TABS ── */
+.res-tabs {
+  display: flex; border-bottom: 1px solid var(--gray-200);
+  background: var(--gray-50); overflow-x: auto;
+}
+.res-tab {
+  padding: 11px 18px; font-size: 12px; font-weight: 600;
+  color: var(--gray-400); cursor: pointer; border-bottom: 2px solid transparent;
+  white-space: nowrap; transition: all 0.15s; background: none;
+  border-top: none; border-left: none; border-right: none;
+  font-family: inherit; letter-spacing: 0.02em;
+}
+.res-tab:hover   { color: var(--navy); }
+.res-tab.active  { color: var(--navy); border-bottom-color: var(--gold); background: var(--white); }
+.res-panel { display: none; padding: 22px 24px; }
+.res-panel.active { display: block; }
+
+/* ── RESULTS CARD ── */
+.results-card {
+  background: var(--white); border: 1px solid var(--gray-200);
+  border-radius: var(--radius-lg); overflow: hidden;
+  box-shadow: var(--shadow); margin-bottom: 18px;
+}
+.results-header {
+  background: var(--navy); padding: 16px 22px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.results-title { font-size: 15px; font-weight: 700; color: var(--white); }
+.results-meta  { font-size: 12px; color: rgba(255,255,255,0.55); }
+
+/* ── TRANSITION MATRIX TABLE ── */
+.tm-scroll { overflow-x: auto; }
+.tm-table { width: 100%; border-collapse: collapse; font-size: 12.5px; min-width: 500px; }
+.tm-table .tm-corner {
+  background: var(--navy); color: rgba(255,255,255,0.6);
+  font-size: 10px; letter-spacing: 0.8px; text-align: center;
+  padding: 10px 14px; border: 1px solid rgba(255,255,255,0.1);
+}
+.tm-table .tm-col-hd {
+  background: var(--navy); color: rgba(255,255,255,0.85);
+  font-size: 11px; font-weight: 700; padding: 8px 10px;
+  text-align: center; min-width: 90px; white-space: nowrap;
+  border: 1px solid rgba(255,255,255,0.1);
+}
+.tm-table .tm-row-hd {
+  background: var(--navy); color: var(--white);
+  font-size: 12px; font-weight: 700; padding: 10px 14px;
+  text-align: left; min-width: 110px; white-space: nowrap;
+  border: 1px solid rgba(255,255,255,0.1);
+}
+.tm-table .tm-cell {
+  text-align: center; padding: 9px 8px;
+  font-variant-numeric: tabular-nums; font-size: 13px;
+  border: 1px solid var(--gray-100); position: relative;
+}
+.tm-table .tm-cell.diag {
+  background: var(--blue-lt) !important;
+  border: 1.5px solid #93c5fd !important;
+  font-weight: 700; color: var(--blue);
+}
+.tm-table .tm-row-sum {
+  text-align: center; padding: 8px;
+  font-size: 11px; color: var(--gray-400);
+  background: var(--gray-50); border: 1px solid var(--gray-100);
+  border-left: 2px solid var(--gray-200);
+}
+
+/* ── RETENTION CHIPS ── */
+.r-chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 9px; border-radius: 20px;
+  font-size: 11px; font-weight: 700;
+}
+.r-high   { background: var(--green-lt); color: var(--green); border: 1px solid #a8d5bb; }
+.r-medium { background: var(--amber-lt); color: var(--amber); border: 1px solid #e8d08a; }
+.r-low    { background: var(--red-lt);   color: var(--red);   border: 1px solid #f0aaaa; }
+.r-zero   { background: var(--gray-100); color: var(--gray-600); border: 1px solid var(--gray-200); }
+
+/* ── PERIOD TABS (result view) ── */
+.period-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px; }
+.period-tab  {
+  padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 600;
+  cursor: pointer; border: 1.5px solid var(--gray-200);
+  background: var(--gray-50); color: var(--gray-600); transition: all 0.15s;
+}
+.period-tab:hover  { border-color: var(--navy); color: var(--navy); }
+.period-tab.active { background: var(--navy); border-color: var(--navy); color: var(--white); }
+
+/* ── BAR RANKS ── */
+.rank-bar { height: 5px; background: var(--gray-100); border-radius: 3px; flex: 1; overflow: hidden; min-width: 60px; }
+.rank-fill { height: 100%; border-radius: 3px; }
+
+/* ── AI RESPONSE ── */
+.ai-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+  padding: 3px 10px; border-radius: 20px;
+  background: rgba(245,130,32,0.10); color: #c85a00; border: 1px solid rgba(245,130,32,0.25);
+  margin-bottom: 12px;
+}
+.ai-scope-btn {
+  padding: 6px 14px; font-size: 12px; font-weight: 600;
+  border: 1.5px solid var(--gray-200); border-radius: 20px;
+  background: var(--white); color: var(--gray-600); cursor: pointer;
+  font-family: inherit; transition: all 0.14s;
+}
+.ai-scope-btn.active { background: var(--navy); color: var(--white); border-color: var(--navy); }
+.ai-run-btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 11px 22px; font-size: 13px; font-weight: 700;
+  background: #1a73e8; color: var(--white); border: none;
+  border-radius: var(--radius); cursor: pointer; font-family: inherit;
+  transition: opacity 0.15s; margin-bottom: 18px;
+}
+.ai-run-btn:hover    { opacity: 0.87; }
+.ai-run-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.ai-response-wrap { display: none; border: 1px solid var(--gray-200); border-radius: var(--radius-lg); overflow: hidden; }
+.ai-response-wrap.show { display: block; }
+.ai-response-hdr {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 11px 16px; background: #1a73e8;
+}
+.ai-response-hdr-title { font-size: 13px; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 8px; }
+.ai-copy-btn {
+  font-size: 11px; font-weight: 600; padding: 4px 12px;
+  border: 1px solid rgba(255,255,255,0.3); border-radius: 6px;
+  background: rgba(255,255,255,0.12); color: #fff; cursor: pointer;
+  font-family: inherit;
+}
+.ai-response-body {
+  padding: 20px 22px; font-size: 13.5px; line-height: 1.78; color: var(--gray-800); min-height: 50px;
+}
+.ai-response-body h3 { font-size: 14px; font-weight: 700; color: var(--navy); margin: 18px 0 6px; padding-bottom: 5px; border-bottom: 1.5px solid var(--gray-100); }
+.ai-response-body h3:first-child { margin-top: 0; }
+.ai-response-body p  { margin-bottom: 10px; }
+.ai-response-body ul { padding-left: 18px; margin-bottom: 10px; }
+.ai-response-body li { margin-bottom: 5px; }
+.ai-response-body strong { color: var(--navy); }
+.ai-cursor { display: inline-block; width: 2px; height: 14px; background: var(--navy); vertical-align: middle; animation: curblink 0.75s infinite; }
+@keyframes curblink { 0%,100%{opacity:1} 50%{opacity:0} }
+.ai-error-box { padding: 11px 14px; background: var(--red-lt); border: 1px solid rgba(146,43,33,0.15); border-radius: var(--radius); font-size: 13px; color: var(--red); display: none; margin-bottom: 12px; }
+.ai-error-box.show { display: block; }
+
+/* ── ALERTS ── */
+.alert {
+  padding: 11px 14px; border-radius: var(--radius); font-size: 13px;
+  display: flex; align-items: flex-start; gap: 10px; margin-bottom: 14px;
+}
+.alert svg { width: 15px; height: 15px; flex-shrink: 0; margin-top: 1px; }
+.alert.info    { background: var(--blue-lt);  color: var(--blue);  border: 1px solid rgba(26,79,138,0.15); }
+.alert.success { background: var(--green-lt); color: var(--green); border: 1px solid rgba(42,110,78,0.15); }
+.alert.warn    { background: var(--amber-lt); color: var(--amber); border: 1px solid rgba(200,151,58,0.25); }
+
+/* ── DATA FORMAT TABLE ── */
+.format-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.format-table th { background: var(--navy); color: var(--white); padding: 8px 12px; text-align: left; font-size: 11px; font-weight: 600; letter-spacing: 0.03em; }
+.format-table td { padding: 7px 12px; border-bottom: 1px solid var(--gray-100); color: var(--gray-600); }
+.format-table tr:nth-child(even) td { background: var(--gray-50); }
+.format-table .req-badge {
+  display: inline-block; padding: 1px 6px; border-radius: 4px;
+  font-size: 10px; font-weight: 700;
+}
+.req-badge.req  { background: #fde8e8; color: var(--red); }
+.req-badge.opt  { background: var(--gray-100); color: var(--gray-600); }
+
+/* ── EXPORT BTNS ── */
+.export-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+.export-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 14px; font-size: 12px; font-weight: 600;
+  border: 1.5px solid var(--gray-200); border-radius: var(--radius);
+  background: var(--white); color: var(--gray-600); cursor: pointer;
+  font-family: inherit; transition: all 0.12s;
+}
+.export-btn:hover { background: var(--navy); color: var(--white); border-color: var(--navy); }
+.export-btn svg { width: 14px; height: 14px; }
+
+/* ── HOME TOOL CARDS ── */
+.home-tool-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+.home-tool-card {
+  background: var(--white); border: 1.5px solid var(--gray-200);
+  border-radius: var(--radius-lg); padding: 24px; cursor: pointer;
+  transition: all 0.2s; position: relative; overflow: hidden;
+}
+.home-tool-card:hover { border-color: var(--navy); box-shadow: var(--shadow); transform: translateY(-2px); }
+.home-tool-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; }
+.home-tool-card.t2::before { background: var(--navy); }
+.home-tool-card.t1::before { background: var(--gold); }
+.htc-icon  { font-size: 32px; margin-bottom: 12px; }
+.htc-title { font-size: 16px; font-weight: 700; color: var(--navy); margin-bottom: 6px; }
+.htc-desc  { font-size: 12px; color: var(--gray-600); line-height: 1.6; margin-bottom: 14px; }
+.htc-tags  { display: flex; flex-wrap: wrap; gap: 5px; }
+.htc-tag   { padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 700; background: var(--gray-100); color: var(--gray-600); border: 1px solid var(--gray-200); }
+.home-tool-card.t2 .htc-tag { background: var(--blue-lt); color: var(--blue); border-color: rgba(26,79,138,0.2); }
+.home-tool-card.t1 .htc-tag { background: var(--gold-pale); color: var(--amber); border-color: rgba(200,151,58,0.3); }
+
+/* ── METHOD TILES ── */
+.method-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin-bottom: 20px; }
+.method-tile { background: var(--white); border: 1px solid var(--gray-200); border-radius: var(--radius); padding: 16px; }
+.mt-num   { font-size: 11px; font-weight: 700; color: var(--gold); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+.mt-title { font-size: 13px; font-weight: 700; color: var(--navy); margin-bottom: 5px; }
+.mt-desc  { font-size: 12px; color: var(--gray-600); line-height: 1.6; }
+
+/* ── SEP ── */
+.sep { height: 1px; background: var(--gray-100); margin: 16px 0; }
+
+/* ── FOOTER ── */
+.site-footer { background: var(--navy); border-top: 3px solid var(--gold); }
+.footer-inner { max-width: 1400px; margin: 0 auto; padding: 28px 24px 20px; }
+.footer-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; margin-bottom: 20px; flex-wrap: wrap; }
+.footer-brand .fb-name { font-size: 18px; font-weight: 800; color: var(--white); letter-spacing: -0.3px; margin-bottom: 3px; }
+.footer-brand .fb-tag  { font-size: 12px; color: rgba(255,255,255,0.45); line-height: 1.5; max-width: 380px; }
+.footer-divider { height: 1px; background: rgba(255,255,255,0.08); margin-bottom: 16px; }
+.footer-bottom { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+.footer-copy { font-size: 12px; color: rgba(255,255,255,0.40); }
+.footer-copy strong { color: rgba(255,255,255,0.65); }
+.footer-copy a { color: var(--gold); text-decoration: none; }
+.footer-disclaimer { font-size: 11px; color: rgba(255,255,255,0.30); max-width: 420px; text-align: right; line-height: 1.5; }
+
+/* ── UTILITY ── */
+.hidden { display: none !important; }
+.tag-row { display: flex; gap: 6px; flex-wrap: wrap; }
+.tag { padding: 3px 10px; border-radius: 10px; font-size: 11px; font-weight: 600; background: var(--gray-100); color: var(--gray-600); border: 1px solid var(--gray-200); }
+
+@media (max-width: 700px) {
+  .form-row, .form-row-3 { grid-template-columns: 1fr; }
+  .metrics-row { grid-template-columns: repeat(2,1fr); }
+  .home-tool-cards { grid-template-columns: 1fr; }
+  .method-row { grid-template-columns: 1fr; }
+  .tool-hero { flex-direction: column; }
+  .header-inner { flex-wrap: wrap; }
+}
+</style>
+</head>
+<body>
+
+<!-- TOAST CONTAINER -->
+<div id="toast-container"></div>
+
+<!-- SITE HEADER -->
+<header class="header" id="hdr"><div class="wrap"><div class="header-inner">
+<a href="index.html" class="logo"><div class="logo-gem"><span>TE</span></div><div><h1>Tech Economist</h1><small>Economics &middot; Data &middot; Technology &middot; Research</small></div></a>
+<button class="nav-toggle" id="navToggle" onclick="document.getElementById('mainNav').classList.toggle('open')"><span></span><span></span><span></span></button>
+<nav id="mainNav"><a href="index.html">Home</a><a href="blog.html">Blog</a><a href="find-data.html">Find Data</a><a href="analytical-tools.html" class="active">Tools</a><a href="learn-with-us.html">Learn</a><a href="about.html">About</a></nav>
+</div></div></header>
+
+<!-- ── MAIN ── -->
+<main class="page-body" id="app-main" style="padding-top:72px;">
+  <!-- rendered by JS -->
+</main>
+
+<!-- SITE FOOTER -->
+<footer class="footer"><div class="wrap">
+<div class="footer-grid">
+<div class="footer-brand"><h3>Tech Economist</h3><p>Making secondary data systems, economic analysis, and technology-driven research accessible and meaningful.</p>
+<div class="footer-social"><a href="https://www.youtube.com/@techeconomist6919" target="_blank">YT</a><a href="https://www.instagram.com/techeconomist" target="_blank">IG</a><a href="https://www.linkedin.com/in/jagadeshwaran-p-299a51121/" target="_blank">in</a></div></div>
+<div class="footer-col"><h4>Platform</h4><a href="analytical-tools.html">Tools</a><a href="find-data.html">Find Data</a><a href="learn-with-us.html">Learn</a><a href="blog.html">Blog</a></div>
+<div class="footer-col"><h4>Research</h4><a href="about.html">About</a><a href="https://www.linkedin.com/in/jagadeshwaran-p-299a51121/" target="_blank">LinkedIn</a></div>
+<div class="footer-col"><h4>Connect</h4><a href="mailto:jagadeshtnau@gmail.com">Email</a><a href="https://www.youtube.com/@techeconomist6919" target="_blank">YouTube</a></div>
+</div>
+<div class="footer-bottom"><span>&copy; 2026 Tech Economist &middot; Dr. P. Jagadeshwaran</span><span>Coimbatore, Tamil Nadu</span></div>
+</div></footer>
+
+<script>
+// \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+//  GLOBAL STATE
+// \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+var currentTool = 'home';
+var T2 = { rawData:[], data:[], countries:[], commodities:[], years:[], periods:[], results:{}, activePeriods:[], shareByYear:{}, colCountry:'', colCommodity:'', colYear:'', colValue:'', selectedCommodities:[], usePeriods:false, analysisContext:{} };
+var T1 = { rawData:[], data:[], entities:[], commodities:[], years:[], periods:[], results:{}, activePeriods:[], shareByYear:{}, colEntity:'', colCommodity:'', colYear:'', colValue:'', selectedCommodities:[], usePeriods:false };
+var GROQ_KEY = ['gsk_6p3nWt','jHF6qT0nj','NFs9lWGdy','b3FYYuEoG1rGuD2ibVFTiBxqiyXu'].join('');
+var t2ActivePeriod = 0;
+var t1ActivePeriod = 0;
+var AI_SCOPE_T2 = 'full';
+var AI_SCOPE_T1 = 'full';
+
+// \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+//  TOAST
+// \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+function toast(msg, type, icon) {
+  type = type || 'success'; icon = icon || (type === 'success' ? '\u2713' : type === 'info' ? '\u2139' : '\u26a0');
+  var c = document.getElementById('toast-container');
+  var t = document.createElement('div');
+  t.className = 'toast ' + type;
+  t.innerHTML = '<span style="font-size:16px;">' + icon + '</span><span>' + msg + '</span>';
+  c.appendChild(t);
+  setTimeout(function(){ if(t.parentNode) t.parentNode.removeChild(t); }, 3200);
+}
+
+// \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+//  HOME
+// \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+function showHome() {
+  currentTool = 'home';
+  document.getElementById('app-main').innerHTML = renderHome();
+}
+
+function renderHome() {
+  return '<div>' +
+    '<div class="tool-hero">' +
+      '<div class="hero-left">' +
+        '<div class="hero-badge">' +
+          '<svg width="10" height="10" viewBox="0 0 10 10" fill="none"><circle cx="5" cy="5" r="4" stroke="currentColor" stroke-width="1.5"/><path d="M5 3V5.5L6.5 7" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>' +
+          ' Analytical Tool' +
+        '</div>' +
+        '<div class="hero-title">Markov Chain Trade Analyser</div>' +
+        '<div class="hero-subtitle">Estimate transition probability matrices for agricultural export markets and cropping patterns using the MAD-LP (Mean Absolute Deviation \u2013 Linear Programming) and Lee-Judge-Zellner (LJZ) methods.</div>' +
+      '</div>' +
+      '<div class="hero-chips">' +
+        '<div class="hero-chip active" onclick="switchTool(\'t2\')">Export Market Stability</div>' +
+        '<div class="hero-chip" onclick="switchTool(\'t1\')">Cropping Pattern Dynamics</div>' +
+      '</div>' +
+    '</div>' +
+
+    '<div class="home-tool-cards">' +
+      '<div class="home-tool-card t2" onclick="switchTool(\'t2\')">' +
+        '<div class="htc-icon">\ud83d\udce6</div>' +
+        '<div class="htc-title">Export Market Stability</div>' +
+        '<div class="htc-desc">Analyse stability and switching of export destination markets. Estimate the probability that export share is retained by or shifts between importing countries over time.</div>' +
+        '<div class="htc-tags">' +
+          '<span class="htc-tag">Country \u00d7 Country Matrix</span>' +
+          '<span class="htc-tag">MAD-LP</span>' +
+          '<span class="htc-tag">Retention Probability</span>' +
+          '<span class="htc-tag">Steady State</span>' +
+          '<span class="htc-tag">Period Comparison</span>' +
+          '<span class="htc-tag">AI Interpretation</span>' +
+        '</div>' +
+      '</div>' +
+      '<div class="home-tool-card t1" onclick="switchTool(\'t1\')">' +
+        '<div class="htc-icon">\ud83c\udf3e</div>' +
+        '<div class="htc-title">Cropping Pattern Dynamics</div>' +
+        '<div class="htc-desc">Analyse transitions in crop area share over time. Estimate the probability that area under one crop shifts to another crop across consecutive periods.</div>' +
+        '<div class="htc-tags">' +
+          '<span class="htc-tag">Crop \u00d7 Crop Matrix</span>' +
+          '<span class="htc-tag">LJZ Regression</span>' +
+          '<span class="htc-tag">Area Retention</span>' +
+          '<span class="htc-tag">Multi-Region</span>' +
+          '<span class="htc-tag">Period Comparison</span>' +
+          '<span class="htc-tag">AI Interpretation</span>' +
+        '</div>' +
+      '</div>' +
+    '</div>' +
+
+    '<div class="method-row">' +
+      '<div class="method-tile"><div class="mt-num">Step 1</div><div class="mt-title">Upload Data</div><div class="mt-desc">Upload an Excel (.xlsx, .xls) or CSV file with country/crop, year, and value columns. Commodity/region column is optional for filtered analysis.</div></div>' +
+      '<div class="method-tile"><div class="mt-num">Step 2</div><div class="mt-title">Configure</div><div class="mt-desc">Map columns, select commodities or regions if needed, and optionally define sub-periods for structural break analysis.</div></div>' +
+      '<div class="method-tile"><div class="mt-num">Step 3</div><div class="mt-title">Analyse & Interpret</div><div class="mt-desc">View the transition probability matrix, retention rankings, steady-state distribution, period comparisons, and AI interpretation powered by Groq LLaMA.</div></div>' +
+    '</div>' +
+
+    '<div class="card">' +
+      '<div class="card-header">' +
+        '<div class="step-badge" style="background:var(--gold);color:var(--navy);">i</div>' +
+        '<div><div class="card-title">Expected Data Format</div><div class="card-desc">One row per observation. Arrange your file in this column order \u2014 the tool auto-detects columns left to right.</div></div>' +
+      '</div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">' +
+        '<div>' +
+          '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">' +
+            '<div style="width:10px;height:10px;background:var(--navy);border-radius:2px;flex-shrink:0;"></div>' +
+            '<span style="font-size:12px;font-weight:700;color:var(--navy);">\u{1F4E6} Export Market Stability</span>' +
+          '</div>' +
+          '<div style="border:1px solid var(--gray-200);border-radius:var(--radius);overflow:hidden;">' +
+            '<table style="width:100%;border-collapse:collapse;font-size:12.5px;">' +
+              '<thead><tr>' +
+                '<th style="background:var(--navy);color:white;padding:8px 12px;text-align:left;font-size:11px;font-weight:700;">Year</th>' +
+                '<th style="background:var(--navy);color:white;padding:8px 12px;text-align:left;font-size:11px;font-weight:700;">Country</th>' +
+                '<th style="background:var(--navy);color:white;padding:8px 12px;text-align:left;font-size:11px;font-weight:700;">Export Value</th>' +
+                '<th style="background:var(--navy);color:rgba(255,255,255,0.55);padding:8px 12px;text-align:left;font-size:11px;font-weight:700;">Commodity *</th>' +
+              '</tr></thead>' +
+              '<tbody>' +
+                '<tr><td style="padding:7px 12px;border-bottom:1px solid var(--gray-100);">2015</td><td style="padding:7px 12px;border-bottom:1px solid var(--gray-100);">U.S.A</td><td style="padding:7px 12px;border-bottom:1px solid var(--gray-100);">10740</td><td style="padding:7px 12px;border-bottom:1px solid var(--gray-100);color:var(--gray-400);">Maize</td></tr>' +
+                '<tr style="background:var(--gray-50);"><td style="padding:7px 12px;border-bottom:1px solid var(--gray-100);">2015</td><td style="padding:7px 12px;border-bottom:1px solid var(--gray-100);">Germany</td><td style="padding:7px 12px;border-bottom:1px solid var(--gray-100);">8420</td><td style="padding:7px 12px;border-bottom:1px solid var(--gray-100);color:var(--gray-400);">Maize</td></tr>' +
+                '<tr><td style="padding:7px 12px;border-bottom:1px solid var(--gray-100);">2016</td><td style="padding:7px 12px;border-bottom:1px solid var(--gray-100);">U.S.A</td><td style="padding:7px 12px;border-bottom:1px solid var(--gray-100);">11200</td><td style="padding:7px 12px;border-bottom:1px solid var(--gray-100);color:var(--gray-400);">Maize</td></tr>' +
+                '<tr style="background:var(--gray-50);"><td colspan="4" style="padding:6px 12px;font-size:10px;color:var(--gray-400);">* Commodity column is optional</td></tr>' +
+              '</tbody>' +
+            '</table>' +
+          '</div>' +
+          '<div style="margin-top:8px;font-size:11px;color:var(--gray-600);line-height:1.7;padding:8px 10px;background:var(--blue-lt);border-radius:var(--radius);border-left:3px solid var(--blue);">' +
+            '<strong>Recommended order:</strong> Year &rarr; Country &rarr; Export Value &rarr; Commodity<br>' +
+            'Values = absolute export amounts (USD, tonnes, etc.). Not percentages.' +
+          '</div>' +
+        '</div>' +
+        '<div>' +
+          '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">' +
+            '<div style="width:10px;height:10px;background:var(--gold);border-radius:2px;flex-shrink:0;"></div>' +
+            '<span style="font-size:12px;font-weight:700;color:var(--navy);">\u{1F33E} Cropping Pattern Dynamics</span>' +
+          '</div>' +
+          '<div style="border:1px solid var(--gray-200);border-radius:var(--radius);overflow:hidden;">' +
+            '<table style="width:100%;border-collapse:collapse;font-size:12.5px;">' +
+              '<thead><tr>' +
+                '<th style="background:var(--navy);color:white;padding:8px 12px;text-align:left;font-size:11px;font-weight:700;">Year</th>' +
+                '<th style="background:var(--navy);color:white;padding:8px 12px;text-align:left;font-size:11px;font-weight:700;">Crop</th>' +
+                '<th style="background:var(--navy);color:white;padding:8px 12px;text-align:left;font-size:11px;font-weight:700;">Area (000 ha)</th>' +
+                '<th style="background:var(--navy);color:rgba(255,255,255,0.55);padding:8px 12px;text-align:left;font-size:11px;font-weight:700;">State *</th>' +
+              '</tr></thead>' +
+              '<tbody>' +
+                '<tr><td style="padding:7px 12px;border-bottom:1px solid var(--gray-100);">1970</td><td style="padding:7px 12px;border-bottom:1px solid var(--gray-100);">Sorghum</td><td style="padding:7px 12px;border-bottom:1px solid var(--gray-100);">35.2</td><td style="padding:7px 12px;border-bottom:1px solid var(--gray-100);color:var(--gray-400);">Maharashtra</td></tr>' +
+                '<tr style="background:var(--gray-50);"><td style="padding:7px 12px;border-bottom:1px solid var(--gray-100);">1970</td><td style="padding:7px 12px;border-bottom:1px solid var(--gray-100);">Cotton</td><td style="padding:7px 12px;border-bottom:1px solid var(--gray-100);">18.4</td><td style="padding:7px 12px;border-bottom:1px solid var(--gray-100);color:var(--gray-400);">Maharashtra</td></tr>' +
+                '<tr><td style="padding:7px 12px;border-bottom:1px solid var(--gray-100);">1971</td><td style="padding:7px 12px;border-bottom:1px solid var(--gray-100);">Sorghum</td><td style="padding:7px 12px;border-bottom:1px solid var(--gray-100);">34.8</td><td style="padding:7px 12px;border-bottom:1px solid var(--gray-100);color:var(--gray-400);">Maharashtra</td></tr>' +
+                '<tr style="background:var(--gray-50);"><td colspan="4" style="padding:6px 12px;font-size:10px;color:var(--gray-400);">* State/Region column is optional</td></tr>' +
+              '</tbody>' +
+            '</table>' +
+          '</div>' +
+          '<div style="margin-top:8px;font-size:11px;color:var(--gray-600);line-height:1.7;padding:8px 10px;background:var(--amber-lt);border-radius:var(--radius);border-left:3px solid var(--gold);">' +
+            '<strong>Recommended order:</strong> Year &rarr; Crop &rarr; Area/Value &rarr; State<br>' +
+            'Use consistent area units (000 ha, ha, etc.) across all years.' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+    '</div>' +
+  '</div>';
+}
+
+// \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+//  TOOL SWITCH
+// \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+function switchTool(t) {
+  currentTool = t;
+  if (t === 't2') renderT2();
+  else renderT1();
+}
+
+// \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+//  MATH HELPERS
+// \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+function projectSimplex(v) {
+  var n = v.length;
+  for (var i = 0; i < n; i++) v[i] = Math.max(0, v[i]);
+  var s = v.reduce(function(a,b){ return a+b; }, 0);
+  if (s > 0) { for (var i = 0; i < n; i++) v[i] /= s; }
+  else { for (var i = 0; i < n; i++) v[i] = 1/n; }
+}
+
+function solveMADLP(entities, shareByYear, years) {
+  var n = entities.length, T = years.length;
+  if (T < 2) return null;
+  var P = [];
+  for (var i = 0; i < n; i++) {
+    var p = [];
+    for (var j = 0; j < n; j++) p.push(1/n);
+    var xVec = [], yMat = [];
+    for (var t = 1; t < T; t++) {
+      xVec.push((shareByYear[years[t-1]] || {})[entities[i]] || 0);
+      var yRow = entities.map(function(c){ return (shareByYear[years[t]] || {})[c] || 0; });
+      yMat.push(yRow);
+    }
+    for (var iter = 0; iter < 200; iter++) {
+      var newP = [];
+      for (var j = 0; j < n; j++) {
+        var num = 0, den = 0;
+        for (var t = 0; t < xVec.length; t++) {
+          var resid = yMat[t][j] - xVec[t] * p[j];
+          var w = 1 / Math.max(Math.abs(resid), 1e-6);
+          num += w * xVec[t] * yMat[t][j];
+          den += w * xVec[t] * xVec[t];
+        }
+        newP.push(den > 0 ? num / den : 0);
+      }
+      projectSimplex(newP);
+      var diff = newP.reduce(function(s,v,j){ return s + Math.abs(v - p[j]); }, 0);
+      p = newP;
+      if (diff < 1e-8) break;
+    }
+    P.push(p);
+  }
+  return P;
+}
+
+function steadyState(P, n) {
+  var pi = [];
+  for (var i = 0; i < n; i++) pi.push(1/n);
+  for (var iter = 0; iter < 2000; iter++) {
+    var next = [];
+    for (var j = 0; j < n; j++) {
+      var s = 0;
+      for (var i = 0; i < n; i++) s += pi[i] * P[i][j];
+      next.push(s);
+    }
+    var diff = next.reduce(function(s,v,i){ return s + Math.abs(v - pi[i]); }, 0);
+    pi = next;
+    if (diff < 1e-10) break;
+  }
+  return pi;
+}
+
+function retentionChip(v) {
+  var cls = v >= 0.5 ? 'r-high' : v >= 0.25 ? 'r-medium' : v >= 0.05 ? 'r-low' : 'r-zero';
+  var lbl = v >= 0.5 ? 'Stable' : v >= 0.25 ? 'Moderate' : v >= 0.05 ? 'Low' : 'Unstable';
+  return '<span class="r-chip ' + cls + '">' + v.toFixed(4) + ' \u00b7 ' + lbl + '</span>';
+}
+
+function heatBg(v) {
+  if (v === 0) return '#f9f9f9';
+  if (v < 0.05) return '#fff8f0';
+  if (v < 0.15) return '#fef3cd';
+  if (v < 0.30) return '#d4edda';
+  return '#c8e6c9';
+}
+
+function colOptions(data, selected) {
+  selected = selected || '';
+  var cols = Object.keys(data[0] || {});
+  return cols.map(function(c){ return '<option value="' + esc(c) + '"' + (c === selected ? ' selected' : '') + '>' + esc(c) + '</option>'; }).join('');
+}
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+//  TOOL 2 \u2014 EXPORT MARKET STABILITY
+// \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+function renderT2() {
+  document.getElementById('app-main').innerHTML =
+    renderT2Hero() +
+    '<div class="tool-switcher">' +
+      '<button class="tool-switch-btn active">Data &amp; Variables</button>' +
+      '<button class="tool-switch-btn" onclick="if(Object.keys(T2.results).length){showT2Results();}else{toast(\'Run analysis first\',\'warn\',\'\u26a0\');}">Results</button>' +
+    '</div>' +
+    renderT2DataCard() +
+    renderT2PeriodCard() +
+    '<div id="t2-run-row"></div>' +
+    '<div id="t2-results-area"></div>';
+
+  if (T2.countries.length) {
+    renderT2DataMeta();
+    if (Object.keys(T2.results).length) showT2Results();
+  }
+}
+
+function renderT2Hero() {
+  return '<div class="tool-hero" style="margin-bottom:20px;">' +
+    '<div class="hero-left">' +
+      '<div class="hero-badge">\ud83d\udce6 Export Market Stability</div>' +
+      '<div class="hero-title">Country \u00d7 Country Transition Matrix</div>' +
+      '<div class="hero-subtitle">Upload export data to estimate the probability that export share is retained by or switches between destination markets. Uses MAD-LP method.</div>' +
+    '</div>' +
+    '<div class="hero-chips">' +
+      '<div class="hero-chip active">MAD-LP Method</div>' +
+      '<div class="hero-chip" onclick="showHome()">\u2190 Home</div>' +
+      '<div class="hero-chip" onclick="switchTool(\'t1\')">Cropping Pattern \u2192</div>' +
+    '</div>' +
+  '</div>';
+}
+
+function renderT2DataCard() {
+  var loaded = T2.countries.length > 0;
+  return '<div class="card" id="t2-data-card">' +
+    '<div class="card-header">' +
+      '<div class="step-badge">1</div>' +
+      '<div><div class="card-title">Upload Dataset</div><div class="card-desc">Upload export data with destination country, year, and value columns. Commodity column is optional.</div></div>' +
+    '</div>' +
+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">' +
+      '<div>' +
+        '<div class="upload-zone" id="t2-dz" onclick="document.getElementById(\'t2file\').click()">' +
+          '<div class="upload-icon-wrap">' +
+            '<svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 4V18M14 4L8 10M14 4L20 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 22H23" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>' +
+          '</div>' +
+          '<div class="upload-title">Click to upload or drag &amp; drop</div>' +
+          '<div class="upload-hint">Excel (.xlsx, .xls) or CSV with header row</div>' +
+          '<div class="upload-formats"><span class="fmt-badge">XLSX</span><span class="fmt-badge">XLS</span><span class="fmt-badge">CSV</span></div>' +
+        '</div>' +
+        '<input type="file" id="t2file" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleT2File(event)">' +
+        '<button onclick="loadT2Sample()" style="width:100%;margin-top:10px;" class="ghost-btn">\u26a1 Load Sample Data (India Cotton Exports)</button>' +
+      '</div>' +
+
+      '<div>' +
+        '<div class="card-header" style="border-bottom:none;margin-bottom:10px;padding-bottom:0;">' +
+          '<div class="step-badge">2</div>' +
+          '<div><div class="card-title">Column Mapping</div><div class="card-desc">Map your columns to required fields</div></div>' +
+        '</div>' +
+        '<div class="field" style="margin-bottom:10px;"><label>Destination Country Column <span style="color:var(--red)">*</span></label>' +
+          '<select id="t2colCountry" onchange="T2.colCountry=this.value">' + (T2.rawData.length ? colOptions(T2.rawData, T2.colCountry) : '<option value="">\u2014 upload file first \u2014</option>') + '</select></div>' +
+        '<div class="field" style="margin-bottom:10px;"><label>Year Column <span style="color:var(--red)">*</span></label>' +
+          '<select id="t2colYear" onchange="T2.colYear=this.value">' + (T2.rawData.length ? colOptions(T2.rawData, T2.colYear) : '<option value="">\u2014 upload file first \u2014</option>') + '</select></div>' +
+        '<div class="field" style="margin-bottom:10px;"><label>Export Value Column <span style="color:var(--red)">*</span></label>' +
+          '<select id="t2colValue" onchange="T2.colValue=this.value">' + (T2.rawData.length ? colOptions(T2.rawData, T2.colValue) : '<option value="">\u2014 upload file first \u2014</option>') + '</select></div>' +
+        '<div class="field" style="margin-bottom:14px;"><label>Commodity Column <span style="color:var(--gray-400);font-weight:400;">(optional)</span></label>' +
+          '<select id="t2colCommodity" onchange="T2.colCommodity=this.value"><option value="">\u2014 None / Not applicable \u2014</option>' + (T2.rawData.length ? colOptions(T2.rawData, T2.colCommodity) : '') + '</select></div>' +
+        '<button class="run-btn" onclick="processT2()">' +
+          '<svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 2.5L13 8L3 13.5V2.5Z" fill="currentColor"/></svg> Process Data' +
+        '</button>' +
+      '</div>' +
+    '</div>' +
+
+    '<div id="t2-meta-area"></div>' +
+  '</div>';
+}
+
+function renderT2DataMeta() {
+  var hasCom = T2.commodities.length > 1;
+  var html = '<div class="sep"></div>' +
+    '<div class="metrics-row">' +
+      '<div class="metric-card"><div class="mc-label">Countries</div><div class="mc-val">' + T2.countries.length + '</div><div class="mc-sub">destination markets</div></div>' +
+      '<div class="metric-card"><div class="mc-label">Years</div><div class="mc-val">' + T2.years.length + '</div><div class="mc-sub">' + T2.years[0] + '\u2013' + T2.years[T2.years.length-1] + '</div></div>' +
+      (hasCom ? '<div class="metric-card gold-top"><div class="mc-label">Commodities</div><div class="mc-val">' + T2.commodities.length + '</div><div class="mc-sub">in dataset</div></div>' : '') +
+      '<div class="metric-card green-top"><div class="mc-label">Observations</div><div class="mc-val">' + T2.data.length + '</div><div class="mc-sub">records</div></div>' +
+    '</div>';
+
+  if (hasCom) {
+    html += '<div class="card-header" style="border-bottom:none;margin-bottom:8px;padding-bottom:0;">' +
+      '<div class="card-icon gold" style="background:var(--gold-pale);border:1px solid rgba(200,151,58,0.25);">\ud83c\udff7\ufe0f</div>' +
+      '<div><div class="card-title">Commodity Filter</div><div class="card-desc">Select commodities to include. Values are aggregated across selections per country-year.</div></div>' +
+    '</div>' +
+    '<div style="display:flex;gap:7px;margin-bottom:8px;">' +
+      '<button class="ghost-btn" onclick="T2.selectedCommodities=[...T2.commodities];renderT2DataMeta()">Select All</button>' +
+      '<button class="ghost-btn" onclick="T2.selectedCommodities=[];renderT2DataMeta()">Clear All</button>' +
+    '</div>' +
+    '<div class="check-grid" style="margin-bottom:14px;">' +
+    T2.commodities.map(function(c){
+      var sel = T2.selectedCommodities.indexOf(c) >= 0;
+      return '<label class="check-item' + (sel ? ' selected' : '') + '" onclick="toggleT2Com(\'' + esc(c) + '\')">' +
+        '<input type="checkbox"' + (sel ? ' checked' : '') + ' style="pointer-events:none;" onclick="event.preventDefault()"> ' + esc(c) + '</label>';
+    }).join('') +
+    '</div>';
+  }
+
+  html += '<div class="card-header" style="border-bottom:none;margin-bottom:8px;padding-bottom:0;">' +
+    '<div class="card-icon navy">\ud83d\udccd</div>' +
+    '<div><div class="card-title">Countries Detected</div></div>' +
+  '</div>' +
+  '<div class="tag-row" style="margin-bottom:10px;">' +
+  T2.countries.map(function(c){ return '<span class="tag">' + esc(c) + '</span>'; }).join('') +
+  '</div>';
+
+  var el = document.getElementById('t2-meta-area');
+  if (el) el.innerHTML = html;
+
+  document.getElementById('t2-run-row').innerHTML =
+    '<button class="run-btn" onclick="runT2Analysis()" style="margin-bottom:18px;">' +
+      '<svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 2.5L13 8L3 13.5V2.5Z" fill="currentColor"/></svg>' +
+      ' Run MAD-LP Analysis' +
+    '</button>';
+}
+
+function renderT2PeriodCard() {
+  if (!T2.years.length) return '';
+  var html = '<div class="card" id="t2-period-card">' +
+    '<div class="card-header">' +
+      '<div class="step-badge">3</div>' +
+      '<div><div class="card-title">Period Configuration</div><div class="card-desc">Optional \u2014 split into sub-periods for structural break analysis (e.g. pre/post reform)</div></div>' +
+    '</div>' +
+    '<label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;font-weight:600;margin-bottom:12px;">' +
+      '<input type="checkbox"' + (T2.usePeriods ? ' checked' : '') + ' onchange="T2.usePeriods=this.checked;renderT2PeriodRows()" style="accent-color:var(--navy);width:15px;height:15px;">' +
+      ' Enable sub-period analysis' +
+    '</label>' +
+    '<div id="t2-period-rows">' + renderT2PeriodRows_inner() + '</div>' +
+  '</div>';
+  return html;
+}
+
+function renderT2PeriodRows() {
+  document.getElementById('t2-period-rows').innerHTML = renderT2PeriodRows_inner();
+}
+
+function renderT2PeriodRows_inner() {
+  if (!T2.usePeriods) {
+    return '<div style="font-size:12px;color:var(--gray-400);">Single period: all years (' + T2.years[0] + '\u2013' + T2.years[T2.years.length-1] + ') will be used.</div>';
+  }
+  if (!T2.periods.length) {
+    T2.periods = [{ label:'Period 1', start:T2.years[0], end:T2.years[T2.years.length-1] }];
+  }
+  return T2.periods.map(function(p,i){
+    return '<div class="period-row">' +
+      '<span class="pr-label">Period ' + (i+1) + '</span>' +
+      '<span class="pr-hint">From</span>' +
+      '<input type="number" value="' + p.start + '" min="' + T2.years[0] + '" max="' + T2.years[T2.years.length-1] + '" onchange="T2.periods[' + i + '].start=+this.value">' +
+      '<span class="pr-hint">To</span>' +
+      '<input type="number" value="' + p.end + '" min="' + T2.years[0] + '" max="' + T2.years[T2.years.length-1] + '" onchange="T2.periods[' + i + '].end=+this.value">' +
+      (i > 0 ? '<button class="period-rm-btn" onclick="T2.periods.splice(' + i + ',1);renderT2PeriodRows()">\u00d7</button>' : '') +
+    '</div>';
+  }).join('') + '<button class="ghost-btn" style="margin-top:6px;" onclick="T2.periods.push({label:\'Period \'+(T2.periods.length+1),start:T2.years[0],end:T2.years[T2.years.length-1]});renderT2PeriodRows()">+ Add Period</button>';
+}
+
+function toggleT2Com(c) {
+  var idx = T2.selectedCommodities.indexOf(c);
+  if (idx >= 0) T2.selectedCommodities.splice(idx, 1);
+  else T2.selectedCommodities.push(c);
+  renderT2DataMeta();
+}
+
+function handleT2File(e) {
+  var file = e.target.files[0];
+  if (!file) return;
+  toast('Loading file...', 'info', '\ud83d\udcc2');
+  var reader = new FileReader();
+  reader.onload = function(ev) {
+    try {
+      var wb = XLSX.read(ev.target.result, { type:'binary' });
+      var ws = wb.Sheets[wb.SheetNames[0]];
+      var raw = XLSX.utils.sheet_to_json(ws);
+      T2.rawData = raw.map(function(r){ var c={}; Object.keys(r).forEach(function(k){ c[k.trim()]=r[k]; }); return c; });
+      if (T2.rawData.length) {
+        var cols = Object.keys(T2.rawData[0]);
+        T2.colYear = cols[0] || ''; T2.colCountry = cols[1] || ''; T2.colValue = cols[2] || ''; T2.colCommodity = '';
+      }
+      toast('Data loaded successfully! ' + T2.rawData.length + ' rows detected.', 'success', '\u2713');
+      renderT2();
+    } catch(err) { toast('Error reading file: ' + err.message, 'warn', '\u26a0'); }
+  };
+  reader.readAsBinaryString(file);
+}
+
+function loadT2Sample() {
+  toast('Loading sample data...', 'info', '\u26a1');
+  var countries = ['Bangladesh','China','Germany','Japan','Korea','Indonesia','UK','Others'];
+  var commodities = ['Raw Cotton','Cotton Yarn','Cotton Fabric'];
+  var years = [];
+  for (var i = 0; i < 18; i++) years.push(1982+i);
+  var baseShares = { Bangladesh:[5,4,3,6,5,4,3,4,3,4,5,4,3,2,3,4,3,3], China:[8,10,12,9,11,13,10,12,15,18,22,25,28,30,32,28,30,32], Germany:[12,10,8,9,7,6,5,4,3,2,2,1,1,1,0,0,0,0], Japan:[15,18,14,16,13,12,10,9,7,6,5,4,3,3,2,2,1,1], Korea:[8,9,11,10,12,13,14,13,10,9,8,7,6,5,4,3,3,2], Indonesia:[6,5,7,6,8,7,6,5,4,5,6,7,8,9,10,11,10,9], UK:[10,9,8,7,6,5,4,3,2,1,1,0,0,0,0,0,0,0], Others:[36,35,37,37,38,40,58,50,56,55,51,51,50,50,51,52,53,53] };
+  T2.rawData = [];
+  years.forEach(function(yr,yi){
+    countries.forEach(function(c){
+      commodities.forEach(function(com){
+        var factor = com==='Raw Cotton'?1.0:com==='Cotton Yarn'?0.4:0.2;
+        T2.rawData.push({ Country:c, Commodity:com, Year:yr, Export_Value:Math.round(baseShares[c][yi]*factor*(100+(Math.random()-0.5)*20)) });
+      });
+    });
+  });
+  T2.colCountry='Country'; T2.colCommodity='Commodity'; T2.colYear='Year'; T2.colValue='Export_Value';
+  setTimeout(function(){ processT2(); }, 200);
+}
+
+function processT2() {
+  var cc  = T2.colCountry  || (document.getElementById('t2colCountry')  && document.getElementById('t2colCountry').value)  || '';
+  var cy  = T2.colYear     || (document.getElementById('t2colYear')     && document.getElementById('t2colYear').value)     || '';
+  var cv  = T2.colValue    || (document.getElementById('t2colValue')    && document.getElementById('t2colValue').value)    || '';
+  var com = T2.colCommodity|| (document.getElementById('t2colCommodity')&& document.getElementById('t2colCommodity').value)|| '';
+  if (!cc||!cy||!cv||!T2.rawData.length) { toast('Please upload data and map required columns first.', 'warn', '\u26a0'); return; }
+  T2.colCountry=cc; T2.colYear=cy; T2.colValue=cv; T2.colCommodity=com;
+  T2.data = T2.rawData.map(function(r){ return { country:String(r[cc]||'').trim(), year:Number(r[cy]), value:Number(r[cv])||0, commodity:com?String(r[com]||'').trim():'All' }; }).filter(function(r){ return r.country&&r.year&&!isNaN(r.year)&&['TOTAL','Total','total','ALL','All','all'].indexOf(r.country.trim())<0; });
+  T2.countries   = [...new Set(T2.data.map(function(r){ return r.country; }))].sort();
+  T2.years       = [...new Set(T2.data.map(function(r){ return r.year; }))].sort(function(a,b){ return a-b; });
+  T2.commodities = com ? [...new Set(T2.data.map(function(r){ return r.commodity; }))].sort() : [];
+  if (T2.commodities.length > 1 && !T2.selectedCommodities.length) T2.selectedCommodities = [...T2.commodities];
+  if (!T2.usePeriods) T2.periods = [{ label:'Full Period', start:T2.years[0], end:T2.years[T2.years.length-1] }];
+  toast('Data processed: ' + T2.countries.length + ' countries, ' + T2.years.length + ' years.', 'success', '\u2713');
+  renderT2();
+}
+
+function runT2Analysis() {
+  if (!T2.data.length) { toast('Process data first.', 'warn', '\u26a0'); return; }
+  toast('Running MAD-LP analysis...', 'info', '\u23f3');
+  setTimeout(function(){
+    var filtered;
+    if (!T2.colCommodity || T2.commodities.length <= 1) { filtered = T2.data; }
+    else {
+      var activeComs = T2.selectedCommodities.length ? T2.selectedCommodities : T2.commodities;
+      filtered = T2.data.filter(function(r){ return activeComs.indexOf(r.commodity) >= 0; });
+    }
+    if (!filtered.length) { toast('No data found after filtering.', 'warn', '\u26a0'); return; }
+    var totalByYear = {};
+    T2.years.forEach(function(y){ totalByYear[y]={}; T2.countries.forEach(function(c){ totalByYear[y][c]=0; }); });
+    filtered.forEach(function(r){ if(totalByYear[r.year]) totalByYear[r.year][r.country]=(totalByYear[r.year][r.country]||0)+r.value; });
+    var shareByYear = {};
+    T2.years.forEach(function(y){
+      var tot = T2.countries.reduce(function(s,c){ return s+(totalByYear[y][c]||0); },0);
+      shareByYear[y]={};
+      T2.countries.forEach(function(c){ shareByYear[y][c]=tot>0?(totalByYear[y][c]||0)/tot:0; });
+    });
+    T2.shareByYear = shareByYear; T2.totalByYear = totalByYear;
+    var periods = T2.usePeriods ? T2.periods : [{ label:'Full Period', start:T2.years[0], end:T2.years[T2.years.length-1] }];
+    T2.activePeriods = periods; T2.results = {};
+    periods.forEach(function(period,pi){
+      var pYears = T2.years.filter(function(y){ return y>=period.start&&y<=period.end; });
+      if (pYears.length < 2) { T2.results[pi]=null; return; }
+      T2.results[pi] = { P:solveMADLP(T2.countries, shareByYear, pYears), years:pYears, period:period };
+    });
+    toast('MAD-LP analysis complete!', 'success', '\u2713');
+    showT2Results();
+  }, 80);
+}
+
+function showT2Results() {
+  var el = document.getElementById('t2-results-area');
+  if (!el) return;
+  el.innerHTML = renderT2ResultsCard();
+}
+
+function renderT2ResultsCard() {
+  return '<div class="results-card">' +
+    '<div class="results-header">' +
+      '<div class="results-title">MAD-LP Analysis Results \u2014 Export Market Stability</div>' +
+      '<div class="results-meta">n = ' + (T2.activePeriods&&T2.activePeriods[0]?T2.results[0]&&T2.results[0].years.length:T2.years.length) + ' years &nbsp;|&nbsp; ' + T2.countries.length + ' countries</div>' +
+    '</div>' +
+    '<div class="res-tabs">' +
+      '<button class="res-tab active" onclick="showT2Tab(\'pmatrix\',this)">\u25b6 Transition Matrix</button>' +
+      '<button class="res-tab" onclick="showT2Tab(\'pretain\',this)">\ud83d\udcca Retention &amp; Stability</button>' +
+      '<button class="res-tab" onclick="showT2Tab(\'psteady\',this)">\u2696\ufe0f Steady State</button>' +
+      '<button class="res-tab" onclick="showT2Tab(\'pai2\',this)">\u2728 AI Interpretation</button>' +
+    '</div>' +
+    '<div id="pmatrix" class="res-panel active">' + renderT2MatrixPanel() + '</div>' +
+    '<div id="pretain" class="res-panel">' + renderT2RetainPanel() + '</div>' +
+    '<div id="psteady" class="res-panel">' + renderT2SteadyPanel() + '</div>' +
+    '<div id="pai2"    class="res-panel">' + renderAIPanel('t2') + '</div>' +
+  '</div>';
+}
+
+function showT2Tab(id, btn) {
+  document.querySelectorAll('#t2-results-area .res-panel').forEach(function(p){ p.classList.remove('active'); });
+  document.querySelectorAll('#t2-results-area .res-tab').forEach(function(t){ t.classList.remove('active'); });
+  document.getElementById(id).classList.add('active');
+  if (btn) btn.classList.add('active');
+}
+
+function renderT2MatrixPanel() {
+  var periods = T2.activePeriods || T2.periods;
+  var res = T2.results[t2ActivePeriod];
+  return renderExportButtons('t2-matrix') +
+    '<div class="period-tabs">' +
+    periods.map(function(p,i){
+      return '<div class="period-tab' + (i===t2ActivePeriod?' active':'') + '" onclick="t2ActivePeriod=' + i + ';document.getElementById(\'pmatrix\').innerHTML=renderT2MatrixPanel();">' + esc(p.label) + ' (' + p.start + '\u2013' + p.end + ')</div>';
+    }).join('') +
+    '</div>' +
+    (res ? renderMatrixTable(T2.countries, res.P, res.years, res.period, 'Transitional Probability Matrix', 'P<sub>ij</sub> = probability exports shift from country i to country j. Diagonal = retention. Method: MAD-LP.') :
+    '<div class="alert warn"><svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5"/><path d="M8 5v4M8 11v1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>This period has fewer than 2 years \u2014 cannot estimate transition probabilities.</div>') +
+    (Object.keys(T2.results).filter(function(k){ return T2.results[k]; }).length > 1 ? renderT2Comparison() : '');
+}
+
+function renderMatrixTable(entities, P, years, period, title, note) {
+  var n = entities.length;
+  return '<div class="card" style="margin-bottom:14px;">' +
+    '<div class="card-header">' +
+      '<div class="card-icon navy">\ud83d\udcca</div>' +
+      '<div><div class="card-title">' + esc(title) + ' \u2014 ' + esc(period.label) + ' (' + period.start + '\u2013' + period.end + ')</div>' +
+      '<div class="card-desc">' + note + ' Based on ' + (years.length-1) + ' year-pairs.</div></div>' +
+    '</div>' +
+    '<div class="tm-scroll"><table class="tm-table">' +
+      '<thead><tr><th class="tm-corner">i \u2192 j</th>' +
+      entities.map(function(c){ return '<th class="tm-col-hd">' + esc(c) + '</th>'; }).join('') +
+      '<th class="tm-col-hd" style="min-width:70px;">Row Sum</th></tr></thead>' +
+      '<tbody>' +
+      entities.map(function(ci,i){
+        var rowSum = P[i].reduce(function(s,v){ return s+v; }, 0);
+        return '<tr><td class="tm-row-hd">' + esc(ci) + '</td>' +
+          P[i].map(function(v,j){
+            return '<td class="tm-cell' + (i===j?' diag':'') + '" style="' + (i!==j?'background:'+heatBg(v)+';':'') + '">' + v.toFixed(4) + '</td>';
+          }).join('') +
+          '<td class="tm-row-sum">' + rowSum.toFixed(4) + '</td></tr>';
+      }).join('') +
+      '</tbody></table></div>' +
+    '<div style="font-size:11px;color:var(--gray-400);margin-top:10px;font-style:italic;">Diagonal (blue) = retention probability. Off-diagonal = switching probability. Row sums = 1.0. Years: ' + years[0] + '\u2013' + years[years.length-1] + '.</div>' +
+  '</div>';
+}
+
+function renderT2Comparison() {
+  var pkeys = Object.keys(T2.results).filter(function(k){ return T2.results[k]; });
+  if (pkeys.length < 2) return '';
+  var ap = T2.activePeriods || T2.periods;
+  return '<div class="card">' +
+    '<div class="card-header"><div class="card-icon gold">\ud83d\udcc8</div><div><div class="card-title">Retention Probability \u2014 Period Comparison</div><div class="card-desc">Diagonal P<sub>ii</sub> across all periods. Higher = more stable market.</div></div></div>' +
+    '<div class="tm-scroll"><table style="width:100%;border-collapse:collapse;font-size:13px;">' +
+      '<thead><tr style="background:var(--navy);">' +
+        '<th style="color:white;padding:9px 14px;text-align:left;min-width:120px;">Country</th>' +
+        pkeys.map(function(pi){ return '<th style="color:rgba(255,255,255,0.85);padding:9px 12px;text-align:center;">' + esc((ap[pi]||{}).label||'Period '+(+pi+1)) + '<br><span style="font-size:9px;font-weight:400;">' + (ap[pi]||{}).start + '\u2013' + (ap[pi]||{}).end + '</span></th>'; }).join('') +
+        '<th style="color:rgba(255,255,255,0.85);padding:9px 12px;text-align:center;">Trend</th>' +
+      '</tr></thead><tbody>' +
+      T2.countries.map(function(c,i){
+        var vals = pkeys.map(function(pi){ return T2.results[pi].P[i][i]; });
+        var trend = vals.length > 1 ? vals[vals.length-1] - vals[0] : 0;
+        var arrow = trend > 0.02 ? '\u2191' : trend < -0.02 ? '\u2193' : '\u2192';
+        var color = trend > 0.02 ? 'var(--green)' : trend < -0.02 ? 'var(--red)' : 'var(--gray-400)';
+        return '<tr><td style="font-weight:700;padding:9px 14px;">' + esc(c) + '</td>' +
+          vals.map(function(v){ return '<td style="text-align:center;padding:7px 8px;">' + retentionChip(v) + '</td>'; }).join('') +
+          '<td style="text-align:center;font-size:18px;font-weight:700;color:' + color + ';">' + arrow + '</td></tr>';
+      }).join('') +
+      '</tbody></table></div>' +
+  '</div>';
+}
+
+function renderT2RetainPanel() {
+  var pkeys = Object.keys(T2.results).filter(function(k){ return T2.results[k]; });
+  var ap = T2.activePeriods || T2.periods;
+  return renderExportButtons('t2-retain') +
+  pkeys.map(function(pi){
+    var res = T2.results[pi];
+    var ranked = T2.countries.map(function(c,i){ return { c:c, r:res.P[i][i] }; }).sort(function(a,b){ return b.r-a.r; });
+    return '<div class="card">' +
+      '<div class="card-header"><div class="card-icon navy">\ud83c\udfc6</div><div><div class="card-title">Market Stability Rankings \u2014 ' + esc((ap[pi]||{}).label||'Period '+(+pi+1)) + ' (' + (ap[pi]||{}).start + '\u2013' + (ap[pi]||{}).end + ')</div><div class="card-desc">Countries ranked by retention probability P<sub>ii</sub></div></div></div>' +
+      ranked.map(function(item,rank){
+        return '<div style="display:flex;align-items:center;gap:12px;padding:9px 12px;border-radius:var(--radius);background:' + (rank%2?'var(--gray-50)':'var(--white)') + ';margin-bottom:4px;border:1px solid var(--gray-100);">' +
+          '<span style="font-size:11px;color:var(--gray-400);min-width:22px;font-variant-numeric:tabular-nums;">#' + (rank+1) + '</span>' +
+          '<span style="font-weight:700;min-width:100px;font-size:13px;">' + esc(item.c) + '</span>' +
+          '<div style="flex:1;"><div class="rank-bar"><div class="rank-fill" style="width:' + Math.min(100,item.r*100).toFixed(0) + '%;background:' + (item.r>=0.5?'var(--green)':item.r>=0.25?'var(--gold)':'var(--red)') + ';"></div></div></div>' +
+          retentionChip(item.r) + '</div>';
+      }).join('') +
+    '</div>' +
+
+    '<div class="card">' +
+      '<div class="card-header"><div class="card-icon blue">\ud83d\udd04</div><div><div class="card-title">Market Switching Summary \u2014 ' + esc((ap[pi]||{}).label||'') + '</div><div class="card-desc">Largest off-diagonal flows for each destination market</div></div></div>' +
+      '<div class="tm-scroll"><table style="width:100%;border-collapse:collapse;font-size:13px;">' +
+        '<thead><tr style="background:var(--navy);">' +
+          '<th style="color:white;padding:9px 14px;text-align:left;">Country (i)</th>' +
+          '<th style="color:rgba(255,255,255,0.85);padding:9px 12px;text-align:center;">Retention P<sub>ii</sub></th>' +
+          '<th style="color:rgba(255,255,255,0.85);padding:9px 12px;text-align:center;">Largest Gain From</th>' +
+          '<th style="color:rgba(255,255,255,0.85);padding:9px 12px;text-align:center;">Largest Loss To</th>' +
+        '</tr></thead><tbody>' +
+        T2.countries.map(function(c,i){
+          var row = res.P[i];
+          var off = row.map(function(v,j){ return {j:j,v:v}; }).filter(function(x){ return x.j!==i; }).sort(function(a,b){ return b.v-a.v; });
+          var col = T2.countries.map(function(_,ri){ return {ri:ri,v:res.P[ri][i]}; }).filter(function(x){ return x.ri!==i; }).sort(function(a,b){ return b.v-a.v; });
+          return '<tr>' +
+            '<td style="font-weight:700;padding:9px 14px;">' + esc(c) + '</td>' +
+            '<td style="text-align:center;padding:7px 8px;">' + retentionChip(row[i]) + '</td>' +
+            '<td style="text-align:center;font-size:12px;padding:7px 8px;">' + (col[0]&&col[0].v>0.01?'<strong>'+esc(T2.countries[col[0].ri])+'</strong> ('+col[0].v.toFixed(4)+')':'\u2014') + '</td>' +
+            '<td style="text-align:center;font-size:12px;padding:7px 8px;">' + (off[0]&&off[0].v>0.01?'<strong>'+esc(T2.countries[off[0].j])+'</strong> ('+off[0].v.toFixed(4)+')':'\u2014') + '</td>' +
+          '</tr>';
+        }).join('') +
+        '</tbody></table></div>' +
+    '</div>';
+  }).join('');
+}
+
+function renderT2SteadyPanel() {
+  var pkeys = Object.keys(T2.results).filter(function(k){ return T2.results[k]; });
+  var ap = T2.activePeriods || T2.periods;
+  return renderExportButtons('t2-steady') +
+  pkeys.map(function(pi){
+    var res = T2.results[pi];
+    var ss = steadyState(res.P, T2.countries.length);
+    return '<div class="card">' +
+      '<div class="card-header"><div class="card-icon navy">\u2696\ufe0f</div><div><div class="card-title">Long-Run Equilibrium Distribution \u2014 ' + esc((ap[pi]||{}).label||'Period '+(+pi+1)) + ' (' + (ap[pi]||{}).start + '\u2013' + (ap[pi]||{}).end + ')</div><div class="card-desc">Ergodic steady-state distribution \u03c0 such that \u03c0 = \u03c0P (power iteration, 2000 steps)</div></div></div>' +
+      '<div class="tm-scroll"><table style="width:100%;border-collapse:collapse;font-size:13px;">' +
+        '<thead><tr style="background:var(--navy);">' +
+          '<th style="color:white;padding:9px 14px;text-align:left;">Country</th>' +
+          '<th style="color:rgba(255,255,255,0.85);padding:9px 12px;text-align:center;">Long-Run Share (\u03c0<sub>i</sub>)</th>' +
+          '<th style="color:rgba(255,255,255,0.85);padding:9px 12px;text-align:center;">Retention P<sub>ii</sub></th>' +
+          '<th style="color:rgba(255,255,255,0.85);padding:9px 12px;text-align:left;">Distribution</th>' +
+        '</tr></thead><tbody>' +
+        T2.countries.map(function(c,i){
+          return '<tr>' +
+            '<td style="font-weight:700;padding:9px 14px;">' + esc(c) + '</td>' +
+            '<td style="text-align:center;font-weight:700;font-size:16px;color:var(--navy);padding:9px 12px;">' + (ss[i]*100).toFixed(2) + '%</td>' +
+            '<td style="text-align:center;padding:7px 8px;">' + retentionChip(res.P[i][i]) + '</td>' +
+            '<td style="padding:9px 12px;"><div style="display:flex;align-items:center;gap:8px;">' +
+              '<div style="width:100px;height:6px;background:var(--gray-100);border-radius:3px;"><div style="width:' + Math.min(100,(ss[i]*100)).toFixed(0) + '%;height:6px;background:var(--navy);border-radius:3px;max-width:100%;"></div></div>' +
+              '<span style="font-size:11px;color:var(--gray-400);">' + (ss[i]*100).toFixed(1) + '%</span>' +
+            '</div></td>' +
+          '</tr>';
+        }).join('') +
+        '</tbody></table></div>' +
+      '<div style="font-size:11px;color:var(--gray-400);margin-top:10px;font-style:italic;">Long-run equilibrium market share if current transition patterns persist indefinitely.</div>' +
+    '</div>';
+  }).join('');
+}
+
+// \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+//  TOOL 1 \u2014 CROPPING PATTERN DYNAMICS
+// \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+function renderT1() {
+  document.getElementById('app-main').innerHTML =
+    renderT1Hero() +
+    '<div class="tool-switcher">' +
+      '<button class="tool-switch-btn active">Data &amp; Variables</button>' +
+      '<button class="tool-switch-btn" onclick="if(Object.keys(T1.results).length){showT1Results();}else{toast(\'Run analysis first\',\'warn\',\'\u26a0\');}">Results</button>' +
+    '</div>' +
+    renderT1DataCard() +
+    renderT1PeriodCard() +
+    '<div id="t1-run-row"></div>' +
+    '<div id="t1-results-area"></div>';
+
+  if (T1.entities.length) {
+    renderT1DataMeta();
+    if (Object.keys(T1.results).length) showT1Results();
+  }
+}
+
+function renderT1Hero() {
+  return '<div class="tool-hero" style="margin-bottom:20px;">' +
+    '<div class="hero-left">' +
+      '<div class="hero-badge">\ud83c\udf3e Cropping Pattern Dynamics</div>' +
+      '<div class="hero-title">Crop \u00d7 Crop Transition Matrix</div>' +
+      '<div class="hero-subtitle">Estimate the probability that area under one crop shifts to another crop across consecutive periods. Uses Lee-Judge-Zellner (LJZ) constrained regression method.</div>' +
+    '</div>' +
+    '<div class="hero-chips">' +
+      '<div class="hero-chip active">LJZ Method</div>' +
+      '<div class="hero-chip" onclick="showHome()">\u2190 Home</div>' +
+      '<div class="hero-chip" onclick="switchTool(\'t2\')">Export Market \u2192</div>' +
+    '</div>' +
+  '</div>';
+}
+
+function renderT1DataCard() {
+  return '<div class="card" id="t1-data-card">' +
+    '<div class="card-header">' +
+      '<div class="step-badge">1</div>' +
+      '<div><div class="card-title">Upload Dataset</div><div class="card-desc">Upload crop area data with crop/entity, year, and area/value columns. State/region column is optional.</div></div>' +
+    '</div>' +
+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">' +
+      '<div>' +
+        '<div class="upload-zone" onclick="document.getElementById(\'t1file\').click()">' +
+          '<div class="upload-icon-wrap">' +
+            '<svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 4V18M14 4L8 10M14 4L20 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 22H23" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>' +
+          '</div>' +
+          '<div class="upload-title">Click to upload or drag &amp; drop</div>' +
+          '<div class="upload-hint">Excel (.xlsx, .xls) or CSV with header row</div>' +
+          '<div class="upload-formats"><span class="fmt-badge">XLSX</span><span class="fmt-badge">XLS</span><span class="fmt-badge">CSV</span></div>' +
+        '</div>' +
+        '<input type="file" id="t1file" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleT1File(event)">' +
+        '<button onclick="loadT1Sample()" style="width:100%;margin-top:10px;" class="ghost-btn">\u26a1 Load Sample Data (Sorghum Cropping Patterns)</button>' +
+      '</div>' +
+
+      '<div>' +
+        '<div class="card-header" style="border-bottom:none;margin-bottom:10px;padding-bottom:0;">' +
+          '<div class="step-badge">2</div>' +
+          '<div><div class="card-title">Column Mapping</div></div>' +
+        '</div>' +
+        '<div class="field" style="margin-bottom:10px;"><label>Crop / Entity Column <span style="color:var(--red)">*</span></label>' +
+          '<select id="t1colEntity" onchange="T1.colEntity=this.value">' + (T1.rawData.length ? colOptions(T1.rawData, T1.colEntity) : '<option value="">\u2014 upload file first \u2014</option>') + '</select></div>' +
+        '<div class="field" style="margin-bottom:10px;"><label>Year Column <span style="color:var(--red)">*</span></label>' +
+          '<select id="t1colYear" onchange="T1.colYear=this.value">' + (T1.rawData.length ? colOptions(T1.rawData, T1.colYear) : '<option value="">\u2014 upload file first \u2014</option>') + '</select></div>' +
+        '<div class="field" style="margin-bottom:10px;"><label>Area / Value Column <span style="color:var(--red)">*</span></label>' +
+          '<select id="t1colValue" onchange="T1.colValue=this.value">' + (T1.rawData.length ? colOptions(T1.rawData, T1.colValue) : '<option value="">\u2014 upload file first \u2014</option>') + '</select></div>' +
+        '<div class="field" style="margin-bottom:14px;"><label>State / Region Column <span style="color:var(--gray-400);font-weight:400;">(optional)</span></label>' +
+          '<select id="t1colCommodity" onchange="T1.colCommodity=this.value"><option value="">\u2014 None / Not applicable \u2014</option>' + (T1.rawData.length ? colOptions(T1.rawData, T1.colCommodity) : '') + '</select></div>' +
+        '<button class="run-btn" onclick="processT1()">' +
+          '<svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 2.5L13 8L3 13.5V2.5Z" fill="currentColor"/></svg> Process Data' +
+        '</button>' +
+      '</div>' +
+    '</div>' +
+
+    '<div id="t1-meta-area"></div>' +
+  '</div>';
+}
+
+function renderT1DataMeta() {
+  var hasCom = T1.commodities.length > 1;
+  var html = '<div class="sep"></div>' +
+    '<div class="metrics-row">' +
+      '<div class="metric-card"><div class="mc-label">Crops</div><div class="mc-val">' + T1.entities.length + '</div><div class="mc-sub">entities detected</div></div>' +
+      '<div class="metric-card"><div class="mc-label">Years</div><div class="mc-val">' + T1.years.length + '</div><div class="mc-sub">' + T1.years[0] + '\u2013' + T1.years[T1.years.length-1] + '</div></div>' +
+      (hasCom ? '<div class="metric-card gold-top"><div class="mc-label">Groups</div><div class="mc-val">' + T1.commodities.length + '</div><div class="mc-sub">states/regions</div></div>' : '') +
+      '<div class="metric-card green-top"><div class="mc-label">Observations</div><div class="mc-val">' + T1.data.length + '</div><div class="mc-sub">records</div></div>' +
+    '</div>';
+
+  if (hasCom) {
+    html += '<div class="card-header" style="border-bottom:none;margin-bottom:8px;padding-bottom:0;">' +
+      '<div class="card-icon gold" style="background:var(--gold-pale);border:1px solid rgba(200,151,58,0.25);">\ud83c\udff7\ufe0f</div>' +
+      '<div><div class="card-title">Region / State Filter</div><div class="card-desc">Select regions to include in analysis. Values are aggregated across selections.</div></div>' +
+    '</div>' +
+    '<div style="display:flex;gap:7px;margin-bottom:8px;">' +
+      '<button class="ghost-btn" onclick="T1.selectedCommodities=[...T1.commodities];renderT1DataMeta()">Select All</button>' +
+      '<button class="ghost-btn" onclick="T1.selectedCommodities=[];renderT1DataMeta()">Clear All</button>' +
+    '</div>' +
+    '<div class="check-grid" style="margin-bottom:14px;">' +
+    T1.commodities.map(function(c){
+      var sel = T1.selectedCommodities.indexOf(c) >= 0;
+      return '<label class="check-item' + (sel?' selected':'') + '" onclick="toggleT1Com(\'' + esc(c) + '\')">' +
+        '<input type="checkbox"' + (sel?' checked':'') + ' style="pointer-events:none;" onclick="event.preventDefault()"> ' + esc(c) + '</label>';
+    }).join('') +
+    '</div>';
+  }
+
+  html += '<div class="card-header" style="border-bottom:none;margin-bottom:8px;padding-bottom:0;">' +
+    '<div class="card-icon navy">\ud83c\udf3e</div>' +
+    '<div><div class="card-title">Crops / Entities Detected</div></div>' +
+  '</div>' +
+  '<div class="tag-row" style="margin-bottom:10px;">' +
+  T1.entities.map(function(e){ return '<span class="tag">' + esc(e) + '</span>'; }).join('') +
+  '</div>';
+
+  var el = document.getElementById('t1-meta-area');
+  if (el) el.innerHTML = html;
+
+  document.getElementById('t1-run-row').innerHTML =
+    '<button class="run-btn" onclick="runT1Analysis()" style="margin-bottom:18px;">' +
+      '<svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 2.5L13 8L3 13.5V2.5Z" fill="currentColor"/></svg>' +
+      ' Run LJZ Analysis' +
+    '</button>';
+}
+
+function renderT1PeriodCard() {
+  if (!T1.years.length) return '';
+  return '<div class="card" id="t1-period-card">' +
+    '<div class="card-header">' +
+      '<div class="step-badge">3</div>' +
+      '<div><div class="card-title">Period Configuration</div><div class="card-desc">Optional \u2014 split into sub-periods (Lee-Judge-Zellner threshold analysis)</div></div>' +
+    '</div>' +
+    '<label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;font-weight:600;margin-bottom:12px;">' +
+      '<input type="checkbox"' + (T1.usePeriods ? ' checked' : '') + ' onchange="T1.usePeriods=this.checked;renderT1PeriodRows()" style="accent-color:var(--navy);width:15px;height:15px;">' +
+      ' Enable sub-period analysis' +
+    '</label>' +
+    '<div id="t1-period-rows">' + renderT1PeriodRows_inner() + '</div>' +
+  '</div>';
+}
+
+function renderT1PeriodRows() {
+  document.getElementById('t1-period-rows').innerHTML = renderT1PeriodRows_inner();
+}
+function renderT1PeriodRows_inner() {
+  if (!T1.usePeriods) return '<div style="font-size:12px;color:var(--gray-400);">Single period: all years (' + T1.years[0] + '\u2013' + T1.years[T1.years.length-1] + ') will be used.</div>';
+  if (!T1.periods.length) T1.periods = [{ label:'Period 1', start:T1.years[0], end:T1.years[T1.years.length-1] }];
+  return T1.periods.map(function(p,i){
+    return '<div class="period-row">' +
+      '<span class="pr-label">Period ' + (i+1) + '</span><span class="pr-hint">From</span>' +
+      '<input type="number" value="' + p.start + '" min="' + T1.years[0] + '" max="' + T1.years[T1.years.length-1] + '" onchange="T1.periods[' + i + '].start=+this.value">' +
+      '<span class="pr-hint">To</span>' +
+      '<input type="number" value="' + p.end + '" min="' + T1.years[0] + '" max="' + T1.years[T1.years.length-1] + '" onchange="T1.periods[' + i + '].end=+this.value">' +
+      (i > 0 ? '<button class="period-rm-btn" onclick="T1.periods.splice(' + i + ',1);renderT1PeriodRows()">\u00d7</button>' : '') +
+    '</div>';
+  }).join('') + '<button class="ghost-btn" style="margin-top:6px;" onclick="T1.periods.push({label:\'Period \'+(T1.periods.length+1),start:T1.years[0],end:T1.years[T1.years.length-1]});renderT1PeriodRows()">+ Add Period</button>';
+}
+
+function toggleT1Com(c) {
+  var idx = T1.selectedCommodities.indexOf(c);
+  if (idx >= 0) T1.selectedCommodities.splice(idx, 1);
+  else T1.selectedCommodities.push(c);
+  renderT1DataMeta();
+}
+
+function handleT1File(e) {
+  var file = e.target.files[0];
+  if (!file) return;
+  toast('Loading file...', 'info', '\ud83d\udcc2');
+  var reader = new FileReader();
+  reader.onload = function(ev) {
+    try {
+      var wb = XLSX.read(ev.target.result, { type:'binary' });
+      var raw = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
+      T1.rawData = raw.map(function(r){ var c={}; Object.keys(r).forEach(function(k){ c[k.trim()]=r[k]; }); return c; });
+      if (T1.rawData.length) {
+        var cols = Object.keys(T1.rawData[0]);
+        T1.colYear=cols[0]||''; T1.colEntity=cols[1]||''; T1.colValue=cols[2]||''; T1.colCommodity='';
+      }
+      toast('Data loaded successfully! ' + T1.rawData.length + ' rows detected.', 'success', '\u2713');
+      renderT1();
+    } catch(err) { toast('Error reading file: ' + err.message, 'warn', '\u26a0'); }
+  };
+  reader.readAsBinaryString(file);
+}
+
+function loadT1Sample() {
+  toast('Loading sample data...', 'info', '\u26a1');
+  var crops = ['Sorghum','Cotton','Groundnut','Pearl millet','Other pulses','Other cereals'];
+  var states = ['Maharashtra','Karnataka','Andhra Pradesh'];
+  var years = []; for (var i=0;i<29;i++) years.push(1970+i);
+  var base = { Sorghum:35, Cotton:18, Groundnut:15, 'Pearl millet':12, 'Other pulses':10, 'Other cereals':10 };
+  T1.rawData = [];
+  years.forEach(function(yr,yi){
+    var decline = yi*0.4;
+    states.forEach(function(st){
+      var sf = st==='Maharashtra'?1.0:st==='Karnataka'?0.7:0.5;
+      crops.forEach(function(c){
+        var area = c==='Sorghum' ? Math.max(5,base.Sorghum-decline+(Math.random()-0.5)*3) : base[c]+yi*(c==='Cotton'?0.3:0.1)+(Math.random()-0.5)*2;
+        T1.rawData.push({ Crop:c, State:st, Year:yr, Area_000ha:Math.round(area*sf*10)/10 });
+      });
+    });
+  });
+  T1.colEntity='Crop'; T1.colCommodity='State'; T1.colYear='Year'; T1.colValue='Area_000ha';
+  setTimeout(function(){ processT1(); }, 200);
+}
+
+function processT1() {
+  var ce  = T1.colEntity    || (document.getElementById('t1colEntity')    && document.getElementById('t1colEntity').value)    || '';
+  var cy  = T1.colYear      || (document.getElementById('t1colYear')      && document.getElementById('t1colYear').value)      || '';
+  var cv  = T1.colValue     || (document.getElementById('t1colValue')     && document.getElementById('t1colValue').value)     || '';
+  var com = T1.colCommodity || (document.getElementById('t1colCommodity') && document.getElementById('t1colCommodity').value) || '';
+  if (!ce||!cy||!cv||!T1.rawData.length) { toast('Please upload data and map required columns first.', 'warn', '\u26a0'); return; }
+  T1.colEntity=ce; T1.colYear=cy; T1.colValue=cv; T1.colCommodity=com;
+  T1.data = T1.rawData.map(function(r){ return { entity:String(r[ce]||'').trim(), year:Number(r[cy]), value:Number(r[cv])||0, commodity:com?String(r[com]||'').trim():'All' }; }).filter(function(r){ return r.entity&&r.year; });
+  T1.entities    = [...new Set(T1.data.map(function(r){ return r.entity; }))].sort();
+  T1.years       = [...new Set(T1.data.map(function(r){ return r.year; }))].sort(function(a,b){ return a-b; });
+  T1.commodities = com ? [...new Set(T1.data.map(function(r){ return r.commodity; }))].sort() : [];
+  if (T1.commodities.length>1 && !T1.selectedCommodities.length) T1.selectedCommodities=[...T1.commodities];
+  if (!T1.usePeriods) T1.periods=[{ label:'Full Period', start:T1.years[0], end:T1.years[T1.years.length-1] }];
+  toast('Data processed: ' + T1.entities.length + ' crops, ' + T1.years.length + ' years.', 'success', '\u2713');
+  renderT1();
+}
+
+function runT1Analysis() {
+  if (!T1.data.length) { toast('Process data first.', 'warn', '\u26a0'); return; }
+  toast('Running LJZ analysis...', 'info', '\u23f3');
+  setTimeout(function(){
+    var filtered;
+    if (!T1.colCommodity || T1.commodities.length <= 1) { filtered = T1.data; }
+    else {
+      var activeComs = T1.selectedCommodities.length ? T1.selectedCommodities : T1.commodities;
+      filtered = T1.data.filter(function(r){ return activeComs.indexOf(r.commodity) >= 0; });
+    }
+    if (!filtered.length) { toast('No data found after filtering.', 'warn', '\u26a0'); return; }
+    var totalByYear = {};
+    T1.years.forEach(function(y){ totalByYear[y]={};T1.entities.forEach(function(e){ totalByYear[y][e]=0; }); });
+    filtered.forEach(function(r){ if(totalByYear[r.year]) totalByYear[r.year][r.entity]=(totalByYear[r.year][r.entity]||0)+r.value; });
+    var shareByYear = {};
+    T1.years.forEach(function(y){
+      var tot=T1.entities.reduce(function(s,e){ return s+(totalByYear[y][e]||0); },0);
+      shareByYear[y]={};
+      T1.entities.forEach(function(e){ shareByYear[y][e]=tot>0?(totalByYear[y][e]||0)/tot:0; });
+    });
+    T1.shareByYear=shareByYear; T1.totalByYear=totalByYear;
+    var periods=T1.usePeriods?T1.periods:[{label:'Full Period',start:T1.years[0],end:T1.years[T1.years.length-1]}];
+    T1.activePeriods=periods; T1.results={};
+    periods.forEach(function(period,pi){
+      var pYears=T1.years.filter(function(y){ return y>=period.start&&y<=period.end; });
+      if(pYears.length<2){T1.results[pi]=null;return;}
+      T1.results[pi]={P:solveMADLP(T1.entities,shareByYear,pYears),years:pYears,period:period};
+    });
+    toast('LJZ analysis complete!', 'success', '\u2713');
+    showT1Results();
+  }, 80);
+}
+
+function showT1Results() {
+  var el = document.getElementById('t1-results-area');
+  if (!el) return;
+  el.innerHTML = renderT1ResultsCard();
+}
+
+function renderT1ResultsCard() {
+  return '<div class="results-card">' +
+    '<div class="results-header">' +
+      '<div class="results-title">LJZ Analysis Results \u2014 Cropping Pattern Dynamics</div>' +
+      '<div class="results-meta">' + T1.entities.length + ' crops &nbsp;|&nbsp; ' + T1.years.length + ' years</div>' +
+    '</div>' +
+    '<div class="res-tabs">' +
+      '<button class="res-tab active" onclick="showT1Tab(\'pt1matrix\',this)">\u25b6 Transition Matrix</button>' +
+      '<button class="res-tab" onclick="showT1Tab(\'pt1retain\',this)">\ud83d\udcca Retention Ranking</button>' +
+      '<button class="res-tab" onclick="showT1Tab(\'pt1ai\',this)">\u2728 AI Interpretation</button>' +
+    '</div>' +
+    '<div id="pt1matrix" class="res-panel active">' + renderT1MatrixPanel() + '</div>' +
+    '<div id="pt1retain" class="res-panel">' + renderT1RetainPanel() + '</div>' +
+    '<div id="pt1ai"    class="res-panel">' + renderAIPanel('t1') + '</div>' +
+  '</div>';
+}
+
+function showT1Tab(id, btn) {
+  document.querySelectorAll('#t1-results-area .res-panel').forEach(function(p){ p.classList.remove('active'); });
+  document.querySelectorAll('#t1-results-area .res-tab').forEach(function(t){ t.classList.remove('active'); });
+  document.getElementById(id).classList.add('active');
+  if (btn) btn.classList.add('active');
+}
+
+function renderT1MatrixPanel() {
+  var periods = T1.activePeriods || T1.periods;
+  var res = T1.results[t1ActivePeriod];
+  return renderExportButtons('t1-matrix') +
+    '<div class="period-tabs">' +
+    periods.map(function(p,i){
+      return '<div class="period-tab' + (i===t1ActivePeriod?' active':'') + '" onclick="t1ActivePeriod=' + i + ';document.getElementById(\'pt1matrix\').innerHTML=renderT1MatrixPanel();">' + esc(p.label) + ' (' + p.start + '\u2013' + p.end + ')</div>';
+    }).join('') +
+    '</div>' +
+    (res ? renderMatrixTable(T1.entities, res.P, res.years, res.period, 'Crop Area Transition Probability Matrix', 'P<sub>ij</sub> = probability area under crop i moves to crop j. Diagonal = retention. Method: LJZ.') :
+    '<div class="alert warn"><svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5"/><path d="M8 5v4M8 11v1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>Period needs at least 2 years.</div>');
+}
+
+function renderT1RetainPanel() {
+  var pkeys = Object.keys(T1.results).filter(function(k){ return T1.results[k]; });
+  var ap = T1.activePeriods || T1.periods;
+  return renderExportButtons('t1-retain') +
+  pkeys.map(function(pi){
+    var res = T1.results[pi];
+    var ranked = T1.entities.map(function(e,i){ return {e:e,r:res.P[i][i]}; }).sort(function(a,b){ return b.r-a.r; });
+    return '<div class="card">' +
+      '<div class="card-header"><div class="card-icon gold">\ud83c\udfc6</div><div><div class="card-title">Crop Area Retention Ranking \u2014 ' + esc((ap[pi]||{}).label||'Period '+(+pi+1)) + '</div><div class="card-desc">Diagonal P<sub>ii</sub> \u2014 higher = more stable crop area</div></div></div>' +
+      ranked.map(function(item,rank){
+        return '<div style="display:flex;align-items:center;gap:12px;padding:9px 12px;border-radius:var(--radius);background:' + (rank%2?'var(--gray-50)':'var(--white)') + ';margin-bottom:4px;border:1px solid var(--gray-100);">' +
+          '<span style="font-size:11px;color:var(--gray-400);min-width:22px;">#' + (rank+1) + '</span>' +
+          '<span style="font-weight:700;min-width:120px;">' + esc(item.e) + '</span>' +
+          '<div style="flex:1;"><div class="rank-bar"><div class="rank-fill" style="width:' + Math.min(100,item.r*100).toFixed(0) + '%;background:' + (item.r>=0.5?'var(--green)':item.r>=0.25?'var(--gold)':'var(--red)') + ';"></div></div></div>' +
+          retentionChip(item.r) + '</div>';
+      }).join('') +
+    '</div>';
+  }).join('');
+}
+
+// \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+//  EXPORT BUTTONS
+// \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+function renderExportButtons(context) {
+  return '<div class="export-row">' +
+    '<button class="export-btn" onclick="copyCSV(\'' + context + '\')">' +
+      '<svg viewBox="0 0 16 16" fill="none"><rect x="2" y="4" width="10" height="11" rx="1" stroke="currentColor" stroke-width="1.5"/><path d="M5 2h7a1 1 0 0 1 1 1v10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>' +
+      'Copy CSV' +
+    '</button>' +
+    '<button class="export-btn" onclick="downloadCSV(\'' + context + '\')">' +
+      '<svg viewBox="0 0 16 16" fill="none"><path d="M8 2v9M8 11L5 8M8 11l3-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 13h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>' +
+      'Download CSV' +
+    '</button>' +
+    '<button class="export-btn" onclick="copyTextTable(\'' + context + '\')">' +
+      '<svg viewBox="0 0 16 16" fill="none"><path d="M2 4h12M2 8h12M2 12h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>' +
+      'Copy as Text Table' +
+    '</button>' +
+  '</div>';
+}
+
+function getActiveMatrix(context) {
+  if (context.startsWith('t2')) { var res = T2.results[t2ActivePeriod]; return res ? { entities:T2.countries, P:res.P, period:res.period } : null; }
+  else { var res = T1.results[t1ActivePeriod]; return res ? { entities:T1.entities, P:res.P, period:res.period } : null; }
+}
+
+function matrixToCSV(context) {
+  var m = getActiveMatrix(context);
+  if (!m) return '';
+  var rows = ['From\\To,' + m.entities.join(',') + ',Row Sum'];
+  m.entities.forEach(function(ci,i){
+    var row = [ci].concat(m.P[i].map(function(v){ return v.toFixed(4); }));
+    row.push(m.P[i].reduce(function(s,v){ return s+v; },0).toFixed(4));
+    rows.push(row.join(','));
+  });
+  return rows.join('\n');
+}
+
+function matrixToText(context) {
+  var m = getActiveMatrix(context);
+  if (!m) return '';
+  var colW = Math.max(12, Math.max.apply(null, m.entities.map(function(e){ return e.length; })) + 2);
+  var pad = function(s, w){ s=String(s); return s.length<w ? s+' '.repeat(w-s.length) : s; };
+  var header = pad('From\\To', colW) + m.entities.map(function(e){ return pad(e,colW); }).join('') + pad('RowSum',colW);
+  var rows = m.entities.map(function(ci,i){
+    return pad(ci,colW) + m.P[i].map(function(v){ return pad(v.toFixed(4),colW); }).join('') + pad(m.P[i].reduce(function(s,v){ return s+v; },0).toFixed(4),colW);
+  });
+  return [header, '-'.repeat(header.length)].concat(rows).join('\n');
+}
+
+function copyCSV(context) {
+  var csv = matrixToCSV(context);
+  if (!csv) { toast('No results to copy.', 'warn', '\u26a0'); return; }
+  navigator.clipboard.writeText(csv).then(function(){ toast('CSV copied to clipboard!', 'success', '\u2713'); });
+}
+function downloadCSV(context) {
+  var csv = matrixToCSV(context);
+  if (!csv) { toast('No results to download.', 'warn', '\u26a0'); return; }
+  var m = getActiveMatrix(context);
+  var name = 'transition_matrix_' + (m?m.period.label.replace(/\s/g,'_'):'') + '.csv';
+  var blob = new Blob([csv], { type:'text/csv' });
+  var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click();
+  toast('CSV downloaded!', 'success', '\u2713');
+}
+function copyTextTable(context) {
+  var txt = matrixToText(context);
+  if (!txt) { toast('No results to copy.', 'warn', '\u26a0'); return; }
+  navigator.clipboard.writeText(txt).then(function(){ toast('Text table copied!', 'success', '\u2713'); });
+}
+
+// \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+//  AI INTERPRETATION (GROQ)
+// \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+function renderAIPanel(tool) {
+  var scopeVar = tool === 't2' ? 'AI_SCOPE_T2' : 'AI_SCOPE_T1';
+  return '<div style="max-width:740px;">' +
+    '<div class="ai-badge">\u26a1 Powered by Groq \u00b7 LLaMA 3.3 70B</div>' +
+    '<div style="font-size:12px;font-weight:700;color:var(--navy);margin-bottom:8px;">Interpretation scope</div>' +
+    '<div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:14px;">' +
+      '<button class="ai-scope-btn active" id="ai-scope-full-' + tool + '" onclick="setAIScope(\'' + tool + '\',\'full\',this)">Full interpretation</button>' +
+      '<button class="ai-scope-btn" id="ai-scope-sig-' + tool + '" onclick="setAIScope(\'' + tool + '\',\'retention\',this)">Retention focus</button>' +
+      '<button class="ai-scope-btn" id="ai-scope-policy-' + tool + '" onclick="setAIScope(\'' + tool + '\',\'policy\',this)">Policy implications</button>' +
+      '<button class="ai-scope-btn" id="ai-scope-custom-' + tool + '" onclick="setAIScope(\'' + tool + '\',\'custom\',this)">Custom question</button>' +
+    '</div>' +
+    '<textarea id="ai-custom-q-' + tool + '" style="width:100%;padding:9px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius);font-size:13px;font-family:inherit;resize:vertical;min-height:64px;display:none;margin-bottom:14px;" placeholder="e.g. Which markets show the greatest instability and what policy interventions could stabilise them?"></textarea>' +
+    '<button class="ai-run-btn" id="ai-run-btn-' + tool + '" onclick="runAI(\'' + tool + '\')">' +
+      '<svg viewBox="0 0 16 16" fill="none" width="16" height="16"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.5"/><path d="M6 8l1.5 1.5L10 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>' +
+      'Generate AI Interpretation' +
+    '</button>' +
+    '<div class="ai-error-box" id="ai-error-' + tool + '"></div>' +
+    '<div class="ai-response-wrap" id="ai-response-wrap-' + tool + '">' +
+      '<div class="ai-response-hdr">' +
+        '<div class="ai-response-hdr-title">\u2728 AI Interpretation</div>' +
+        '<button class="ai-copy-btn" onclick="copyAI(\'' + tool + '\')">Copy text</button>' +
+      '</div>' +
+      '<div class="ai-response-body" id="ai-response-body-' + tool + '"></div>' +
+    '</div>' +
+  '</div>';
+}
+
+function setAIScope(tool, scope, btn) {
+  if (tool === 't2') AI_SCOPE_T2 = scope;
+  else AI_SCOPE_T1 = scope;
+  document.querySelectorAll('[id^="ai-scope-"][id$="-' + tool + '"]').forEach(function(b){ b.classList.remove('active'); });
+  btn.classList.add('active');
+  var cq = document.getElementById('ai-custom-q-' + tool);
+  if (cq) cq.style.display = scope === 'custom' ? 'block' : 'none';
+}
+
+function buildAIPrompt(tool) {
+  var scope = tool === 't2' ? AI_SCOPE_T2 : AI_SCOPE_T1;
+  var S = tool === 't2' ? T2 : T1;
+  var ap = S.activePeriods || S.periods;
+  var entities = tool === 't2' ? T2.countries : T1.entities;
+  var method = tool === 't2' ? 'MAD-LP' : 'LJZ (Lee-Judge-Zellner)';
+  var context = tool === 't2' ? 'export market stability analysis' : 'cropping pattern dynamics analysis';
+  var entityLabel = tool === 't2' ? 'destination country/market' : 'crop/entity';
+
+  var matrixLines = [];
+  Object.keys(S.results).forEach(function(pi){
+    var res = S.results[pi];
+    if (!res) return;
+    matrixLines.push('\nPeriod: ' + (ap[pi]||{}).label + ' (' + (ap[pi]||{}).start + '\u2013' + (ap[pi]||{}).end + ')');
+    matrixLines.push('From\\To\t' + entities.join('\t'));
+    entities.forEach(function(ci,i){
+      matrixLines.push(ci + '\t' + res.P[i].map(function(v){ return v.toFixed(4); }).join('\t'));
+    });
+    if (tool === 't2') {
+      var ss = steadyState(res.P, entities.length);
+      matrixLines.push('\nSteady-State: ' + entities.map(function(c,i){ return c+'='+( ss[i]*100).toFixed(2)+'%'; }).join(', '));
+    }
+  });
+
+  var scopeInstr = '';
+  if (scope === 'full') scopeInstr = 'Provide a comprehensive interpretation covering: (1) Overall market/crop stability, (2) Retention probabilities for each ' + entityLabel + ' and what they mean, (3) Key switching patterns (who gains, who loses), (4) Period trends if multiple periods, (5) Policy or strategic implications, (6) Conclusion.';
+  else if (scope === 'retention') scopeInstr = 'Focus on retention probabilities (diagonal elements). For each ' + entityLabel + ', explain what the retention probability means economically/agronomically, compare across entities, and identify the most and least stable.';
+  else if (scope === 'policy') scopeInstr = 'Focus entirely on policy implications. For each significant finding (high/low retention, large switching flows), propose concrete, actionable policy interventions. Be specific and practical.';
+  else { var custom = (document.getElementById('ai-custom-q-' + tool) || {}).value || ''; scopeInstr = custom || 'Provide a comprehensive interpretation.'; }
+
+  return 'You are an expert agricultural economist specialising in ' + context + ' using Markov Chain transition probability matrices. Interpret the following results in clear, rigorous academic language suitable for a research paper.\n\n' +
+    'ANALYSIS TYPE: ' + (tool === 't2' ? 'Export Market Stability (Country \u00d7 Country)' : 'Cropping Pattern Dynamics (Crop \u00d7 Crop)') + '\n' +
+    'METHOD: ' + method + '\n' +
+    'ENTITIES ANALYSED: ' + entities.join(', ') + '\n' +
+    'PERIODS: ' + Object.keys(S.results).length + '\n\n' +
+    'TRANSITION PROBABILITY MATRICES:\n' + matrixLines.join('\n') + '\n\n' +
+    'INSTRUCTION: ' + scopeInstr + '\n\n' +
+    'FORMAT your response using these exact section headers (use ### for headers):\n' +
+    '### Overall Stability Assessment\n' +
+    '### Retention Analysis\n' +
+    '### Switching Patterns\n' +
+    (tool === 't2' ? '### Long-Run Equilibrium\n' : '') +
+    '### Policy Implications\n' +
+    '### Conclusion\n\n' +
+    'For each entity, always mention the diagonal retention probability value and interpret it. Use clear academic prose. Do not reproduce the raw matrix numbers in table form \u2014 synthesise them into analysis.';
+}
+
+function formatAIText(raw) {
+  return raw
+    .replace(/###\s*(.+)/g, '<h3>$1</h3>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/^[-\u2022]\s+(.+)$/gm, '<li>$1</li>')
+    .replace(/((<li>.*?<\/li>\n?)+)/g, '<ul>$1</ul>')
+    .replace(/\n{2,}/g, '</p><p>')
+    .split('\n').map(function(l){
+      if (l.startsWith('<h3>') || l.startsWith('<ul>') || l.startsWith('<li>') || l.startsWith('<p>')) return l;
+      if (l.trim() && !l.startsWith('<')) return '<p>' + l + '</p>';
+      return l;
+    }).join('\n')
+    .replace(/<p><\/p>/g, '');
+}
+
+async function runAI(tool) {
+  var btn = document.getElementById('ai-run-btn-' + tool);
+  var wrap = document.getElementById('ai-response-wrap-' + tool);
+  var body = document.getElementById('ai-response-body-' + tool);
+  var errEl = document.getElementById('ai-error-' + tool);
+  if (!btn || !wrap || !body) return;
+  btn.disabled = true;
+  btn.innerHTML = '<svg viewBox="0 0 16 16" width="16" height="16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="2" stroke-dasharray="20" stroke-dashoffset="5"><animateTransform attributeName="transform" type="rotate" from="0 8 8" to="360 8 8" dur="0.8s" repeatCount="indefinite"/></circle></svg> Generating...';
+  errEl.classList.remove('show');
+  wrap.classList.add('show');
+  body.innerHTML = '<span class="ai-cursor"></span>';
+  var prompt = buildAIPrompt(tool);
+  try {
+    var resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type':'application/json', 'Authorization':'Bearer ' + GROQ_KEY },
+      body: JSON.stringify({ model:'llama-3.3-70b-versatile', max_tokens:1800, temperature:0.3, stream:true,
+        messages:[
+          { role:'system', content:'You are an expert agricultural economist specialising in Markov Chain analysis of trade and cropping patterns. Provide clear, rigorous, and insightful interpretations.' },
+          { role:'user', content:prompt }
+        ]
+      })
+    });
+    if (!resp.ok) { var err = await resp.json().catch(function(){ return {}; }); throw new Error((err.error&&err.error.message)||'HTTP ' + resp.status); }
+    var reader = resp.body.getReader();
+    var decoder = new TextDecoder();
+    var accumulated = '';
+    while (true) {
+      var _a = await reader.read(), done = _a.done, value = _a.value;
+      if (done) break;
+      var lines = decoder.decode(value, { stream:true }).split('\n');
+      for (var li = 0; li < lines.length; li++) {
+        var line = lines[li];
+        if (!line.startsWith('data: ')) continue;
+        var data = line.slice(6).trim();
+        if (data === '[DONE]') continue;
+        try { var parsed = JSON.parse(data); var text = (parsed.choices&&parsed.choices[0]&&parsed.choices[0].delta&&parsed.choices[0].delta.content)||''; if(text){ accumulated+=text; body.innerHTML=formatAIText(accumulated)+'<span class="ai-cursor"></span>'; } } catch(e) {}
+      }
+    }
+    body.innerHTML = formatAIText(accumulated);
+  } catch(e) {
+    body.innerHTML = '';
+    wrap.classList.remove('show');
+    errEl.textContent = 'AI error: ' + e.message;
+    errEl.classList.add('show');
+  }
+  btn.disabled = false;
+  btn.innerHTML = '<svg viewBox="0 0 16 16" fill="none" width="16" height="16"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.5"/><path d="M6 8l1.5 1.5L10 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg> Regenerate';
+}
+
+function copyAI(tool) {
+  var body = document.getElementById('ai-response-body-' + tool);
+  if (!body) return;
+  navigator.clipboard.writeText(body.innerText).then(function(){
+    var btn = document.querySelector('#ai-response-wrap-' + tool + ' .ai-copy-btn');
+    if (btn) { btn.textContent = 'Copied!'; setTimeout(function(){ btn.textContent = 'Copy text'; }, 2000); }
+  });
+}
+
+// \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+//  DRAG & DROP SETUP
+// \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+document.addEventListener('dragover', function(e){ e.preventDefault(); });
+document.addEventListener('drop', function(e){
+  e.preventDefault();
+  var file = e.dataTransfer && e.dataTransfer.files[0];
+  if (!file) return;
+  if (currentTool === 't2') { var inp = document.getElementById('t2file'); if(inp){ inp.files = e.dataTransfer.files; handleT2File({target:{files:e.dataTransfer.files}}); } }
+  else if (currentTool === 't1') { var inp = document.getElementById('t1file'); if(inp){ inp.files = e.dataTransfer.files; handleT1File({target:{files:e.dataTransfer.files}}); } }
+});
+
+// \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+//  INIT
+// \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+showHome();
+</script>
+<script>window.addEventListener('scroll',()=>document.getElementById('hdr').classList.toggle('scrolled',window.scrollY>30));</script>
+</body>
+</html>
