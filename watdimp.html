@@ -5,6 +5,15 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>WatDIMP — Watershed Development Impact Measurement</title>
 <link rel="stylesheet" href="style.css">
+<style>
+/* Override WatDIMP viewport-lock so page scrolls normally with site header/footer */
+html, body { height: auto !important; min-height: 100vh !important; }
+body { display: block !important; }
+.site-header { position: relative !important; }
+.main { flex: none !important; min-height: auto !important; display: block !important; }
+.content { overflow-y: visible !important; flex: none !important; min-height: auto !important; }
+.menu-bar { position: sticky; top: 56px; z-index: 90; }
+</style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Mono:wght@400;500&family=Manrope:wght@300;400;500;600&display=swap');
