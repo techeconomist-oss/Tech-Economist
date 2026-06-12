@@ -90,6 +90,36 @@
 .exp-btn{display:inline-flex;align-items:center;gap:5px;padding:8px 16px;font-size:12px;font-weight:600;border:1px solid var(--border);border-radius:10px;background:var(--w-card);color:var(--slate);cursor:pointer;font-family:var(--sans);transition:all .12s}
 .exp-btn:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
 .hidden{display:none!important}
+/* ── View tabs (Analyse / Help) ── */
+.view-tabs{display:flex;gap:6px;margin-bottom:18px;background:var(--w-card);border:1px solid var(--border);border-radius:14px;padding:5px;box-shadow:0 2px 8px rgba(0,0,0,.025)}
+.view-tab{flex:1;padding:11px;border:none;border-radius:10px;font-family:var(--sans);font-size:13px;font-weight:600;color:var(--slate);background:transparent;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:7px}
+.view-tab.active{background:linear-gradient(135deg,var(--accent),#6d4bea);color:#fff;box-shadow:0 4px 14px rgba(124,92,252,.25)}
+.view-tab:hover:not(.active){background:var(--w-sec);color:var(--ink)}
+/* ── Help manual ── */
+.help-intro{background:linear-gradient(135deg,var(--bg-hero),#1e1b4b);border-radius:20px;padding:26px 28px;color:#fff;margin-bottom:20px;position:relative;overflow:hidden}
+.help-intro::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 400px 300px at 85% 20%,rgba(52,211,153,.1),transparent 70%)}
+.help-intro *{position:relative;z-index:1}
+.help-intro h2{font-family:var(--serif);font-size:24px;font-weight:400;margin-bottom:6px}
+.help-intro p{font-size:13px;color:rgba(255,255,255,.5);line-height:1.7;max-width:620px}
+.help-step{background:var(--w-card);border:1px solid var(--border);border-radius:18px;padding:24px;margin-bottom:16px;box-shadow:0 2px 8px rgba(0,0,0,.025),inset 0 -3px 6px rgba(0,0,0,.012);display:grid;grid-template-columns:48px 1fr;gap:18px;align-items:start}
+.help-step-num{width:48px;height:48px;border-radius:14px;background:linear-gradient(135deg,var(--accent),#6d4bea);color:#fff;font-size:20px;font-weight:700;display:flex;align-items:center;justify-content:center;font-family:var(--serif);box-shadow:0 4px 14px rgba(124,92,252,.25)}
+.help-step h3{font-size:16px;font-weight:700;color:var(--ink);margin-bottom:6px}
+.help-step p{font-size:13px;color:var(--slate);line-height:1.7;margin-bottom:10px}
+.help-step ul{padding-left:18px;margin:8px 0}
+.help-step li{font-size:13px;color:var(--slate);line-height:1.7;margin-bottom:4px}
+.help-step strong{color:var(--ink)}
+.help-img{margin-top:12px;border:2px dashed var(--border);border-radius:14px;overflow:hidden;background:var(--w-sec);min-height:180px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;transition:all .2s}
+.help-img:hover{border-color:var(--accent);background:rgba(124,92,252,.02)}
+.help-img img{width:100%;border-radius:10px;display:block}
+.help-img .ph-ico{font-size:32px;opacity:.3;margin-bottom:8px}
+.help-img .ph-txt{font-size:12px;color:var(--muted);font-weight:600}
+.help-img .ph-sub{font-size:11px;color:var(--muted);opacity:.7;margin-top:3px}
+.help-tip{background:rgba(52,211,153,.06);border:1px solid rgba(52,211,153,.15);border-left:3px solid var(--mint);border-radius:10px;padding:10px 14px;font-size:12px;color:#0f766e;line-height:1.6;margin-top:10px}
+.help-note{background:rgba(240,160,48,.06);border:1px solid rgba(240,160,48,.15);border-left:3px solid var(--gold);border-radius:10px;padding:10px 14px;font-size:12px;color:#92650a;line-height:1.6;margin-top:10px}
+.help-data-tbl{width:100%;border-collapse:collapse;font-size:12px;margin-top:12px;border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.help-data-tbl th{background:var(--bg-hero);color:rgba(255,255,255,.8);padding:8px 12px;text-align:left;font-size:11px;font-weight:600}
+.help-data-tbl td{padding:7px 12px;border-bottom:1px solid #eef0f4;color:var(--slate)}
+.help-data-tbl tr:nth-child(even) td{background:var(--w-sec)}
 @media(max-width:640px){.field-row{grid-template-columns:1fr}.cd-box{grid-template-columns:1fr}.mode-tabs{flex-direction:column}}
 </style>
 </head>
@@ -105,8 +135,17 @@
 <div class="tool-hero">
 <div class="tool-pill">&#127793; Agricultural Research Suite</div>
 <h1>AgRes — Experimental Design Analysis</h1>
-<p>CRD &amp; RBD analysis with ANOVA, Critical Difference, DMRT letter groupings, visualizations, and AI-powered interpretation. Based on Rangaswamy (1995).</p>
+<p>CRD, RBD &amp; LSD analysis with ANOVA, Critical Difference, DMRT letter groupings, visualizations, and AI-powered interpretation. Based on Rangaswamy (1995).</p>
 </div>
+
+<!-- VIEW TABS -->
+<div class="view-tabs">
+<button class="view-tab active" id="vtAnalyse" onclick="setView('analyse')">&#128202; Analyse</button>
+<button class="view-tab" id="vtHelp" onclick="setView('help')">&#128214; How to Use</button>
+</div>
+
+<!-- ═══ ANALYSE VIEW ═══ -->
+<div id="view-analyse">
 
 <!-- STEP 1: UPLOAD -->
 <div class="step" id="step1">
@@ -126,12 +165,17 @@
 <div class="step hidden" id="step2">
 <div class="step-hdr"><div class="step-num">2</div><div><div class="step-title">Select Design &amp; Map Columns</div><div class="step-desc">Choose analysis type and assign columns</div></div></div>
 <div class="mode-tabs">
-<div class="mode-tab active" onclick="setMode('crd',this)"><h3>CRD</h3><p>Completely Randomized Design — one-way ANOVA</p></div>
-<div class="mode-tab" onclick="setMode('rbd',this)"><h3>RBD</h3><p>Randomized Block Design — two-way ANOVA</p></div>
+<div class="mode-tab active" onclick="setMode('crd',this)"><h3>CRD</h3><p>Completely Randomized — one-way ANOVA</p></div>
+<div class="mode-tab" onclick="setMode('rbd',this)"><h3>RBD</h3><p>Randomized Block — two-way ANOVA</p></div>
+<div class="mode-tab" onclick="setMode('lsd',this)"><h3>LSD</h3><p>Latin Square — row + column control</p></div>
 </div>
 <div class="field-row">
 <div class="field"><label>Treatment Column *</label><select id="colTrt"></select></div>
 <div class="field" id="repField"><label>Replication Column *</label><select id="colRep"></select></div>
+</div>
+<div class="field-row" id="lsdFields" style="display:none">
+<div class="field"><label>Row Column *</label><select id="colRow"></select></div>
+<div class="field"><label>Column Column *</label><select id="colCol"></select></div>
 </div>
 <div class="field"><label>Response Variable(s) — select one or more</label><select id="colResp" multiple style="min-height:80px"></select></div>
 <p style="font-size:11px;color:var(--muted);margin-top:6px;">Hold Ctrl/Cmd to select multiple response variables. Each will get a separate ANOVA.</p>
@@ -148,6 +192,102 @@
 
 <!-- RESULTS -->
 <div id="resultsArea" class="hidden"></div>
+</div><!-- /view-analyse -->
+
+<!-- ═══ HELP VIEW ═══ -->
+<div id="view-help" class="hidden">
+
+<div class="help-intro">
+<h2>How to Use AgRes Suite</h2>
+<p>A step-by-step guide to running CRD, RBD, and LSD experimental design analysis — from uploading your data to interpreting the ANOVA output. Follow along with the screenshots for each stage.</p>
+</div>
+
+<div class="help-step">
+<div class="help-step-num">1</div>
+<div>
+<h3>Prepare &amp; Upload Your Data</h3>
+<p>Arrange your data in <strong>long format</strong> — one observation per row, with column headers in the first row. Save as CSV or Excel (.xlsx). Your file needs a treatment column, a response (measurement) column, and design-specific columns:</p>
+<table class="help-data-tbl">
+<thead><tr><th>Design</th><th>Required columns</th></tr></thead>
+<tbody>
+<tr><td><strong>CRD</strong></td><td>Treatment, Response</td></tr>
+<tr><td><strong>RBD</strong></td><td>Treatment, Replication, Response</td></tr>
+<tr><td><strong>LSD</strong></td><td>Treatment, Row, Column, Response</td></tr>
+</tbody>
+</table>
+<p style="margin-top:10px;">Click the upload box or drag your file in. To explore first, click <strong>Load Sample Data</strong> for a ready-made rice variety trial.</p>
+<div class="help-img"><div class="ph-ico">&#128247;</div><div class="ph-txt">Screenshot: Upload step</div><div class="ph-sub">Replace this placeholder — save image as agres-help-1.png</div>
+<!-- <img src="agres-help-1.png" alt="Upload data step"> --></div>
+<div class="help-tip">&#128161; Tip: Keep treatment names consistent (e.g. always "IR 20", not "IR20" in some rows). The tool groups by exact text match.</div>
+</div>
+</div>
+
+<div class="help-step">
+<div class="help-step-num">2</div>
+<div>
+<h3>Select Design &amp; Map Columns</h3>
+<p>Once uploaded, a preview of your data appears. Choose your experimental design from the three tabs:</p>
+<ul>
+<li><strong>CRD</strong> — Completely Randomized Design. Use when experimental units are homogeneous (e.g. pots, lab conditions).</li>
+<li><strong>RBD</strong> — Randomized Block Design. Use when you have a known source of variation to block (e.g. field gradient). Reveals a Replication column field.</li>
+<li><strong>LSD</strong> — Latin Square Design. Controls variation in two directions. Reveals Row and Column fields. Requires a perfect p×p square.</li>
+</ul>
+<p>Then map each dropdown to the matching column in your data. Select one or more <strong>response variables</strong> (hold Ctrl/Cmd to pick several — each gets its own ANOVA).</p>
+<div class="help-img"><div class="ph-ico">&#128247;</div><div class="ph-txt">Screenshot: Design selection &amp; column mapping</div><div class="ph-sub">Replace this placeholder — save image as agres-help-2.png</div>
+<!-- <img src="agres-help-2.png" alt="Configure step"> --></div>
+<div class="help-note">&#9888; For LSD: number of treatments must equal number of rows and columns (e.g. 5 treatments → 5×5 grid). The tool will warn you if the square is incomplete.</div>
+</div>
+</div>
+
+<div class="help-step">
+<div class="help-step-num">3</div>
+<div>
+<h3>Run the Analysis</h3>
+<p>Click <strong>Run Analysis</strong>. The tool computes everything locally in your browser — your data never leaves your device. A green success message confirms completion and the results appear below automatically.</p>
+<div class="help-img"><div class="ph-ico">&#128247;</div><div class="ph-txt">Screenshot: Run button &amp; success message</div><div class="ph-sub">Replace this placeholder — save image as agres-help-3.png</div>
+<!-- <img src="agres-help-3.png" alt="Run analysis step"> --></div>
+</div>
+</div>
+
+<div class="help-step">
+<div class="help-step-num">4</div>
+<div>
+<h3>Read the ANOVA Table</h3>
+<p>The ANOVA table shows the variance breakdown. Key columns:</p>
+<ul>
+<li><strong>F Value</strong> — ratio of treatment to error variance. Higher means treatments differ more.</li>
+<li><strong>Pr(&gt;F)</strong> — the p-value. Below 0.05 means significant treatment differences.</li>
+<li><strong>Sig</strong> — significance stars: <strong>***</strong> (p&lt;0.001), <strong>**</strong> (p&lt;0.01), <strong>*</strong> (p&lt;0.05), NS (not significant).</li>
+</ul>
+<p>Below the table, the statistics box gives <strong>Grand Mean, CV%, SE(m), SE(d), and Critical Difference (CD)</strong> at 5% and 1%.</p>
+<div class="help-img"><div class="ph-ico">&#128247;</div><div class="ph-txt">Screenshot: ANOVA table &amp; statistics</div><div class="ph-sub">Replace this placeholder — save image as agres-help-4.png</div>
+<!-- <img src="agres-help-4.png" alt="ANOVA results"> --></div>
+<div class="help-tip">&#128161; CV% indicates experiment precision. Below 10% is excellent; 10–20% is acceptable for field trials; above 20% suggests high variability.</div>
+</div>
+</div>
+
+<div class="help-step">
+<div class="help-step-num">5</div>
+<div>
+<h3>Interpret Means &amp; DMRT Groupings</h3>
+<p>The treatment means table ranks treatments from highest to lowest, each tagged with a <strong>DMRT letter group</strong>. Treatments sharing a letter are <strong>not significantly different</strong>; treatments with no shared letter differ significantly. The bar chart visualizes this — hover any bar to see its group.</p>
+<div class="help-img"><div class="ph-ico">&#128247;</div><div class="ph-txt">Screenshot: Means table &amp; bar chart</div><div class="ph-sub">Replace this placeholder — save image as agres-help-5.png</div>
+<!-- <img src="agres-help-5.png" alt="Means and grouping"> --></div>
+</div>
+</div>
+
+<div class="help-step">
+<div class="help-step-num">6</div>
+<div>
+<h3>Generate AI Interpretation &amp; Export</h3>
+<p>Click <strong>Generate AI Interpretation</strong> for a plain-language, thesis-ready writeup of your results — ANOVA summary, treatment comparison, best performer, and conclusion. Then use <strong>Copy ANOVA</strong> or <strong>Download CSV</strong> to save your results for your report.</p>
+<div class="help-img"><div class="ph-ico">&#128247;</div><div class="ph-txt">Screenshot: AI interpretation &amp; export buttons</div><div class="ph-sub">Replace this placeholder — save image as agres-help-6.png</div>
+<!-- <img src="agres-help-6.png" alt="AI interpretation"> --></div>
+<div class="help-tip">&#128161; The AI writeup is a starting draft — always review the statistical values against your own understanding before using in publications.</div>
+</div>
+</div>
+
+</div><!-- /view-help -->
 </div>
 
 <footer class="footer"><div class="wrap">
@@ -163,6 +303,15 @@
 
 <script>
 window.addEventListener('scroll',()=>document.getElementById('hdr').classList.toggle('scrolled',window.scrollY>30));
+
+// ── View switcher (Analyse / Help) ──
+function setView(v){
+  document.getElementById('view-analyse').classList.toggle('hidden',v!=='analyse');
+  document.getElementById('view-help').classList.toggle('hidden',v!=='help');
+  document.getElementById('vtAnalyse').classList.toggle('active',v==='analyse');
+  document.getElementById('vtHelp').classList.toggle('active',v==='help');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
 document.addEventListener('dragover',e=>e.preventDefault());
 document.addEventListener('drop',e=>{e.preventDefault();if(e.dataTransfer.files[0])handleFile(e.dataTransfer.files[0]);});
 
@@ -210,6 +359,8 @@ function showConfig(){
   var opts=COLS.map(function(c){return'<option value="'+esc(c)+'">'+esc(c)+'</option>';}).join('');
   document.getElementById('colTrt').innerHTML='<option value="">— Select —</option>'+opts;
   document.getElementById('colRep').innerHTML='<option value="">— Select —</option>'+opts;
+  document.getElementById('colRow').innerHTML='<option value="">— Select —</option>'+opts;
+  document.getElementById('colCol').innerHTML='<option value="">— Select —</option>'+opts;
   document.getElementById('colResp').innerHTML=opts;
   document.getElementById('step2').classList.remove('hidden');
   document.getElementById('step3').classList.remove('hidden');
@@ -220,7 +371,9 @@ function setMode(m,el){
   document.querySelectorAll('.mode-tab').forEach(function(t){t.classList.remove('active');});
   el.classList.add('active');
   document.getElementById('repField').style.display=m==='rbd'?'block':'none';
-  document.getElementById('runDesc').textContent=m==='crd'?'CRD — one-way ANOVA with post-hoc tests':'RBD — two-way ANOVA with post-hoc tests';
+  document.getElementById('lsdFields').style.display=m==='lsd'?'grid':'none';
+  var desc={crd:'CRD — one-way ANOVA with post-hoc tests',rbd:'RBD — two-way ANOVA with post-hoc tests',lsd:'LSD — row + column controlled ANOVA'};
+  document.getElementById('runDesc').textContent=desc[m];
 }
 
 // ══ STATISTICS ══
@@ -277,7 +430,42 @@ function calcRBD(data,trtCol,repCol,respCol){
   return{type:'RBD',resp:respCol,trts:trts,reps:reps,means:means,sds:sds,cells:cells,anova:[{src:'Treatment',df:dfTrt,ss:SSTrt,ms:MSTrt,f:FTrt,p:pTrt},{src:'Replication',df:dfRep,ss:SSRep,ms:MSRep,f:FRep,p:pRep},{src:'Error',df:dfE,ss:SSE,ms:MSE,f:null,p:null},{src:'Total',df:dfT,ss:SSTotal,ms:null,f:null,p:null}],SEm:SEm,SEd:SEd,CD5:CD5,CD1:CD1,CV:Math.sqrt(MSE)/(grandSum/N)*100,GM:grandSum/N,MSE:MSE,grouping:grouping,N:N,t:t,r:r};
 }
 
-// ══ DMRT LETTER GROUPING ══
+// ══ LATIN SQUARE DESIGN ══
+function calcLSD(data,trtCol,rowCol,colCol,respCol){
+  var cells={},trtsSet={},rowsSet={},colsSet={};
+  data.forEach(function(r){
+    var t=String(r[trtCol]).trim(),rw=String(r[rowCol]).trim(),cl=String(r[colCol]).trim(),v=parseFloat(r[respCol]);
+    if(t&&rw&&cl&&!isNaN(v)){trtsSet[t]=1;rowsSet[rw]=1;colsSet[cl]=1;cells[rw+'|||'+cl]={t:t,v:v};}
+  });
+  var trts=Object.keys(trtsSet).sort(),rows=Object.keys(rowsSet).sort(),cols=Object.keys(colsSet).sort();
+  var p=trts.length,N=p*p;
+  if(rows.length!==p||cols.length!==p)throw new Error('LSD requires a p×p square: '+p+' treatments need '+p+' rows and '+p+' columns (found '+rows.length+' rows, '+cols.length+' cols).');
+  var grandSum=0,grandSS=0,trtSums={},rowSums={},colSums={};
+  trts.forEach(function(k){trtSums[k]=0;});rows.forEach(function(k){rowSums[k]=0;});cols.forEach(function(k){colSums[k]=0;});
+  rows.forEach(function(rw){cols.forEach(function(cl){var c=cells[rw+'|||'+cl];if(!c)throw new Error('Missing cell at row '+rw+', column '+cl+'. LSD needs every row×column filled.');var v=c.v;grandSum+=v;grandSS+=v*v;trtSums[c.t]+=v;rowSums[rw]+=v;colSums[cl]+=v;});});
+  var CF=grandSum*grandSum/N,SSTotal=grandSS-CF;
+  var SSTrt=0;trts.forEach(function(k){SSTrt+=trtSums[k]*trtSums[k]/p;});SSTrt-=CF;
+  var SSRow=0;rows.forEach(function(k){SSRow+=rowSums[k]*rowSums[k]/p;});SSRow-=CF;
+  var SSCol=0;cols.forEach(function(k){SSCol+=colSums[k]*colSums[k]/p;});SSCol-=CF;
+  var SSE=SSTotal-SSTrt-SSRow-SSCol;
+  var dfTrt=p-1,dfRow=p-1,dfCol=p-1,dfE=(p-1)*(p-2),dfT=N-1;
+  var MSTrt=SSTrt/dfTrt,MSRow=SSRow/dfRow,MSCol=SSCol/dfCol,MSE=SSE/dfE;
+  var FTrt=MSTrt/MSE,FRow=MSRow/MSE,FCol=MSCol/MSE;
+  var pTrt=pFromF(FTrt,dfTrt,dfE),pRow=pFromF(FRow,dfRow,dfE),pCol=pFromF(FCol,dfCol,dfE);
+  var means={},sds={};
+  trts.forEach(function(t){means[t]=trtSums[t]/p;});
+  var sq={};trts.forEach(function(t){sq[t]=[];});
+  rows.forEach(function(rw){cols.forEach(function(cl){var c=cells[rw+'|||'+cl];sq[c.t].push(c.v);});});
+  trts.forEach(function(t){var m=means[t];sds[t]=Math.sqrt(sq[t].reduce(function(a,v){return a+(v-m)*(v-m);},0)/(p-1));});
+  var SEm=Math.sqrt(MSE/p),SEd=Math.sqrt(2*MSE/p);
+  var CD5=tCrit(.05,dfE)*SEd,CD1=tCrit(.01,dfE)*SEd;
+  var grouping=dmrt(trts,means,MSE,p,dfE);
+  return{type:'LSD',resp:respCol,trts:trts,means:means,sds:sds,
+    anova:[{src:'Rows',df:dfRow,ss:SSRow,ms:MSRow,f:FRow,p:pRow},{src:'Columns',df:dfCol,ss:SSCol,ms:MSCol,f:FCol,p:pCol},{src:'Treatment',df:dfTrt,ss:SSTrt,ms:MSTrt,f:FTrt,p:pTrt},{src:'Error',df:dfE,ss:SSE,ms:MSE,f:null,p:null},{src:'Total',df:dfT,ss:SSTotal,ms:null,f:null,p:null}],
+    SEm:SEm,SEd:SEd,CD5:CD5,CD1:CD1,CV:Math.sqrt(MSE)/(grandSum/N)*100,GM:grandSum/N,MSE:MSE,grouping:grouping,N:N,t:p,r:p};
+}
+
+
 function dmrt(trts,means,MSE,r,dfE){
   var sorted=trts.slice().sort(function(a,b){return means[b]-means[a];});
   var n=sorted.length,SEm=Math.sqrt(MSE/r);
@@ -298,21 +486,30 @@ function runAnalysis(){
   var trtCol=document.getElementById('colTrt').value;
   if(!trtCol){alert('Select a Treatment column.');return;}
   if(MODE==='rbd'&&!document.getElementById('colRep').value){alert('Select a Replication column for RBD.');return;}
+  if(MODE==='lsd'&&(!document.getElementById('colRow').value||!document.getElementById('colCol').value)){alert('Select both Row and Column for LSD.');return;}
   var respSel=document.getElementById('colResp'),resps=[];
   for(var i=0;i<respSel.options.length;i++){if(respSel.options[i].selected)resps.push(respSel.options[i].value);}
-  resps=resps.filter(function(c){return c!==trtCol&&c!==(MODE==='rbd'?document.getElementById('colRep').value:'');});
+  var exclude=[trtCol];
+  if(MODE==='rbd')exclude.push(document.getElementById('colRep').value);
+  if(MODE==='lsd'){exclude.push(document.getElementById('colRow').value);exclude.push(document.getElementById('colCol').value);}
+  resps=resps.filter(function(c){return exclude.indexOf(c)<0;});
   if(!resps.length){alert('Select at least one response variable.');return;}
 
   var btn=document.getElementById('runBtn');
   btn.disabled=true;btn.innerHTML='&#9203; Computing...';
   setTimeout(function(){
     RESULTS=[];chartInstances.forEach(function(c){try{c.destroy();}catch(e){}});chartInstances=[];
+    var errMsg='';
     resps.forEach(function(resp){
       try{
-        var res=MODE==='crd'?calcCRD(DATA,trtCol,resp):calcRBD(DATA,trtCol,document.getElementById('colRep').value,resp);
+        var res;
+        if(MODE==='crd')res=calcCRD(DATA,trtCol,resp);
+        else if(MODE==='rbd')res=calcRBD(DATA,trtCol,document.getElementById('colRep').value,resp);
+        else res=calcLSD(DATA,trtCol,document.getElementById('colRow').value,document.getElementById('colCol').value,resp);
         RESULTS.push(res);
-      }catch(e){console.error(e);}
+      }catch(e){errMsg=e.message;console.error(e);}
     });
+    if(!RESULTS.length&&errMsg){alert(errMsg);btn.disabled=false;btn.innerHTML='&#9654; Run Analysis';return;}
     renderResults();
     document.getElementById('successBar').classList.add('show');
     document.getElementById('resultsArea').classList.remove('hidden');
@@ -370,7 +567,7 @@ async function runAI(idx){
   body.innerHTML='<span class="ai-cursor"></span>';
   var anovaStr=res.anova.map(function(r){return r.src+': df='+r.df+', SS='+fmt(r.ss)+', MS='+(r.ms!==null?fmt(r.ms):'-')+', F='+(r.f!==null?fmt(r.f,3):'-')+', p='+(r.p!==null?(r.p<.001?'<0.001':fmt(r.p,4)):'-');}).join('; ');
   var meansStr=res.trts.map(function(t){return t+'='+fmt(res.means[t],2)+' ('+res.grouping[t]+')';}).join(', ');
-  var prompt='You are an expert agricultural statistician. Interpret the following '+res.type+' ANOVA results for the response variable "'+res.resp+'" in clear academic language suitable for a research thesis.\n\nANOVA: '+anovaStr+'\nGrand Mean: '+fmt(res.GM,3)+' | CV: '+fmt(res.CV,2)+'% | CD(5%): '+fmt(res.CD5,4)+' | CD(1%): '+fmt(res.CD1,4)+'\nTreatment Means (with DMRT groups): '+meansStr+'\n\nProvide 4 sections using h4 tags: 1. ANOVA Summary 2. Treatment Comparison 3. Best Performing Treatment 4. Conclusion. Use strong tags for key figures. Under 400 words. Reference Rangaswamy (1995) methodology. Mention CD values and DMRT groupings.';
+  var prompt='You are an expert agricultural statistician. Interpret the following '+res.type+' ANOVA results for the response variable "'+res.resp+'" in clear academic language suitable for a research thesis.\n\nANOVA: '+anovaStr+'\nGrand Mean: '+fmt(res.GM,3)+' | CV: '+fmt(res.CV,2)+'% | CD(5%): '+fmt(res.CD5,4)+' | CD(1%): '+fmt(res.CD1,4)+'\nTreatment Means (with DMRT groups): '+meansStr+'\n\n'+(res.type==='LSD'?'Note: LSD controls variation in two directions (rows and columns). Comment on whether row/column blocking was effective. ':'')+'Provide 4 sections using h4 tags: 1. ANOVA Summary 2. Treatment Comparison 3. Best Performing Treatment 4. Conclusion. Use strong tags for key figures. Under 400 words. Reference Rangaswamy (1995) methodology. Mention CD values and DMRT groupings.';
   try{
     var resp=await fetch('https://api.groq.com/openai/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+GROQ_KEY},body:JSON.stringify({model:'llama-3.3-70b-versatile',max_tokens:1200,temperature:0.3,stream:true,messages:[{role:'system',content:'You are an expert agricultural statistician specialising in experimental design analysis.'},{role:'user',content:prompt}]})});
     if(!resp.ok)throw new Error('HTTP '+resp.status);
