@@ -1,0 +1,113 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Research &amp; Tech Intern &mdash; Tech Economist Careers</title><meta name="description" content="Apply for the Research &amp; Tech Intern role at Tech Economist &mdash; a 3-month internship blending applied agricultural economics research with tool-building.">
+<link rel="stylesheet" href="style.css"></head><body>
+<header class="header" id="hdr"><div class="wrap"><div class="header-inner">
+<a href="index.html" class="logo"><div class="logo-gem"><span>TE</span></div><div><h1>Tech Economist</h1><small>Economics &middot; Data &middot; Technology &middot; Research</small></div></a>
+<button class="nav-toggle" id="navToggle" onclick="document.getElementById('mainNav').classList.toggle('open')"><span></span><span></span><span></span></button>
+<nav id="mainNav"><a href="index.html">Home</a><a href="blog.html">Blog</a><a href="find-data.html">Find Data</a><a href="analytical-tools.html">Tools</a><a href="learn-with-us.html">Learn</a><a href="about.html">About</a><a href="careers.html" class="active">Careers</a></nav>
+</div></div></header>
+
+<section class="page-hero"><div class="wrap">
+<a href="careers.html" style="font-size:12px;color:rgba(255,255,255,.6);text-decoration:none;">&larr; Back to Careers</a>
+<div class="hero-overline" style="margin-top:10px;">Hiring Now &middot; 3 Months</div>
+<h1>Research &amp; Tech Intern</h1>
+<p>A role blending applied agricultural economics research with the build-out of our free analytical tool suite.</p>
+</div></section>
+
+<section class="section" style="background:var(--w-sec);"><div class="wrap">
+<div class="sec-head" style="text-align:center">
+<div class="sec-overline accent" style="justify-content:center">The Role</div>
+<h2 class="sec-title">What This Internship Covers</h2>
+<p class="sec-desc" style="margin:0 auto">A general internship covering both research support and tool development &mdash; you can lean toward whichever suits your strengths.</p>
+</div>
+<div class="why-grid">
+<div class="why-card reveal-pop"><div class="why-tag">Duration</div><div class="why-icon">&#128197;</div><h3>3 Months</h3><p>Starting soon, on a rolling basis &mdash; we onboard as soon as we find the right fit. Flexible, remote-friendly hours.</p></div>
+<div class="why-card reveal-pop"><div class="why-tag">Compensation</div><div class="why-icon">&#129309;</div><h3>Stipend &amp; Certificate</h3><p>A completion certificate is guaranteed. Whether the internship is paid depends on your background, interest, and fit &mdash; we&rsquo;ll discuss this after reviewing your application.</p></div>
+<div class="why-card sol reveal-pop"><div class="why-tag">What You'll Do</div><div class="why-icon">&#128187;</div><h3>Research + Build</h3><p>Support agricultural economics research (data, literature, analysis) and help build/test the next tools in our free browser-based suite.</p></div>
+</div>
+</div></section>
+
+<section class="section"><div class="wrap">
+<div class="sec-head" style="text-align:center">
+<div class="sec-overline accent" style="justify-content:center">What We're Looking For</div>
+<h2 class="sec-title">Who Should Apply</h2>
+</div>
+<div class="who-grid">
+<div class="domain-item reveal"><div class="domain-dot" style="background:var(--accent);"></div><span style="font-size:13px;font-weight:500;">Students/graduates in economics, agri-economics, statistics, or CS</span></div>
+<div class="domain-item reveal"><div class="domain-dot" style="background:var(--gold);"></div><span style="font-size:13px;font-weight:500;">Comfortable with Excel/data, or basic HTML/JS &mdash; not both required</span></div>
+<div class="domain-item reveal"><div class="domain-dot" style="background:var(--mint);"></div><span style="font-size:13px;font-weight:500;">Curious about econometrics, agriculture, or applied research tools</span></div>
+<div class="domain-item reveal"><div class="domain-dot" style="background:var(--coral);"></div><span style="font-size:13px;font-weight:500;">Self-driven &mdash; this is a remote, browser-based, async-friendly team</span></div>
+</div>
+</div></section>
+
+<section class="section" style="background:var(--w-card);" id="apply-sec"><div class="wrap">
+<div style="max-width:640px;margin:0 auto;">
+<div class="sec-head" style="text-align:center">
+<div class="sec-overline gold" style="justify-content:center">Apply</div>
+<h2 class="sec-title">Internship Application</h2>
+<p class="sec-desc" style="margin:0 auto">Fill this in and hit submit &mdash; your application goes straight to us and you&rsquo;ll get a confirmation email.</p>
+</div>
+<div class="form-box reveal">
+<div id="apply-form-content">
+<form id="apply-form" onsubmit="return sendApplication(event)">
+<div class="form-group"><label class="form-label">Full Name</label><input class="form-input" type="text" name="name" placeholder="Your full name" required></div>
+<div class="form-group"><label class="form-label">Email</label><input class="form-input" type="email" name="email" placeholder="your@email.com" required></div>
+<div class="form-group"><label class="form-label">Phone</label><input class="form-input" type="tel" name="phone" placeholder="Your phone number" required></div>
+<div class="form-group"><label class="form-label">Institution / Course</label><input class="form-input" type="text" name="institution" placeholder="University, degree, year"></div>
+<div class="form-group"><label class="form-label">Area of Interest</label><select class="form-input" name="area"><option>Research &amp; Data Analysis</option><option>Tool Development (web/coding)</option><option>Both / Not Sure Yet</option></select></div>
+<div class="form-group"><label class="form-label">Availability</label><input class="form-input" type="text" name="availability" placeholder="Earliest start date" required></div>
+<div class="form-group"><label class="form-label">Hours per Week</label><input class="form-input" type="text" name="hours" placeholder="e.g. 10-15 hrs/week" required></div>
+<div class="form-group"><label class="form-label">Expected Stipend</label><input class="form-input" type="text" name="stipend" placeholder="Your expected monthly stipend (or 'Open to unpaid/certificate')" required></div>
+<div class="form-group"><label class="form-label">Why do you want to intern with us?</label><textarea class="form-textarea" name="message" rows="4" placeholder="A few lines about your interest and relevant experience..." required></textarea></div>
+<button type="submit" class="form-submit" id="apply-submit-btn">Submit Application</button>
+</form>
+<p style="font-size:11px;color:var(--muted);text-align:center;margin-top:10px;">Have a resume/portfolio link? Feel free to also email it directly to <a href="mailto:jagadeshtnau@gmail.com" style="color:var(--accent);">jagadeshtnau@gmail.com</a>.</p>
+</div>
+<div id="apply-form-success" style="display:none;text-align:center;padding:32px 16px;">
+<div style="font-size:32px;margin-bottom:8px;color:var(--mint);">&#10003;</div>
+<h3 style="font-size:16px;color:var(--ink);margin-bottom:4px;">Thank You for Applying</h3>
+<p style="font-size:13px;color:var(--muted);">Your application has been submitted. You&rsquo;ll receive an email from us regarding next steps.</p>
+</div>
+</div>
+</div>
+</div></section>
+
+<footer class="footer"><div class="wrap">
+<div class="footer-grid">
+<div class="footer-brand"><h3>Tech Economist</h3><p>Making secondary data systems, economic analysis, and technology-driven research accessible and meaningful.</p>
+<div class="footer-social"><a href="https://www.youtube.com/@techeconomist6919" target="_blank">YT</a><a href="https://www.instagram.com/techeconomist" target="_blank">IG</a><a href="https://www.linkedin.com/in/jagadeshwaran-p-299a51121/" target="_blank">in</a></div></div>
+<div class="footer-col"><h4>Platform</h4><a href="analytical-tools.html">Tools</a><a href="find-data.html">Find Data</a><a href="learn-with-us.html">Learn</a><a href="blog.html">Blog</a></div>
+<div class="footer-col"><h4>Research</h4><a href="about.html">About</a><a href="careers.html">Careers</a><a href="https://www.linkedin.com/in/jagadeshwaran-p-299a51121/" target="_blank">LinkedIn</a></div>
+<div class="footer-col"><h4>Connect</h4><a href="mailto:jagadeshtnau@gmail.com">Email</a><a href="https://www.youtube.com/@techeconomist6919" target="_blank">YouTube</a></div>
+</div>
+<div class="footer-bottom"><span>&copy; 2026 Tech Economist &middot; Dr. P. Jagadeshwaran</span><span>Coimbatore, Tamil Nadu</span></div>
+</div></footer>
+<script src="main.js"></script>
+<script>
+const GAS_URL = 'https://script.google.com/macros/s/AKfycby9WOw4wQOf2kr_xCPiGvVoorsM6XmYfg0WqcfEnxoASCRnl6bvKlaV4Swfnh4Omru2xw/exec';
+
+function sendApplication(e){
+  e.preventDefault();
+  var form = e.target;
+  var btn = document.getElementById('apply-submit-btn');
+  var orig = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Submitting...';
+  var data = {};
+  new FormData(form).forEach(function(v,k){ data[k]=v; });
+  data.form_type = 'Internship Application';
+  data.page = window.location.href;
+  fetch(GAS_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) })
+  .then(function(){
+    document.getElementById('apply-form-content').style.display = 'none';
+    document.getElementById('apply-form-success').style.display = 'block';
+  })
+  .catch(function(){
+    alert('Could not submit. Please email jagadeshtnau@gmail.com directly.');
+    btn.disabled = false; btn.textContent = orig;
+  });
+  return false;
+}
+window.addEventListener('scroll',function(){document.getElementById('hdr').classList.toggle('scrolled',window.scrollY>30);});
+</script>
+</body></html>
