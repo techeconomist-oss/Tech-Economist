@@ -271,6 +271,33 @@ body {
 }
 .ghost-btn:hover { background: var(--navy); color: var(--white); border-color: var(--navy); }
 
+/* ── DATA FORMAT GUIDE ── */
+.fmt-guide { border: 1px solid var(--gray-200); border-left: 4px solid var(--gold); border-radius: var(--radius); background: var(--white); margin-bottom: 18px; }
+.fmt-guide > summary { cursor: pointer; padding: 11px 14px; font-size: 13px; font-weight: 700; color: var(--navy); list-style: none; display: flex; align-items: center; gap: 8px; }
+.fmt-guide > summary::-webkit-details-marker { display: none; }
+.fmt-guide > summary::after { content: '\25BE'; margin-left: auto; color: var(--gray-400); transition: transform .2s; }
+.fmt-guide[open] > summary::after { transform: rotate(180deg); }
+.fg-sub { font-weight: 400; font-size: 11.5px; color: var(--gray-600); }
+.fg-body { display: grid; grid-template-columns: 1.15fr 1fr; gap: 22px; padding: 2px 14px 14px; }
+.fg-cap { font-size: 11px; font-weight: 700; color: var(--navy); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 6px; }
+.fg-tbl { width: 100%; border-collapse: collapse; font-size: 12.5px; border: 1px solid var(--gray-200); }
+.fg-tbl th { background: var(--navy); color: #fff; padding: 7px 10px; text-align: left; font-size: 11.5px; font-weight: 700; white-space: nowrap; }
+.fg-tbl th.fg-opt { background: var(--navy-lt); color: rgba(255,255,255,.85); }
+.fg-tbl th small { display: block; font-size: 8.5px; letter-spacing: .07em; text-transform: uppercase; margin-top: 2px; color: var(--gold-lt); }
+.fg-tbl th.fg-opt small { color: rgba(255,255,255,.55); }
+.fg-tbl td { padding: 6px 10px; border-bottom: 1px solid var(--gray-100); }
+.fg-tbl tr:nth-child(even) td { background: var(--gray-50); }
+.fg-rownum { color: var(--gray-400); font-size: 10px; width: 22px; text-align: center; background: var(--gray-100) !important; }
+.fg-rules { margin: 0; padding-left: 18px; font-size: 12px; line-height: 1.65; color: var(--gray-600); }
+.fg-rules li { margin-bottom: 4px; }
+.fg-rules b { color: var(--navy); }
+.fg-bad { margin-top: 10px; padding: 8px 10px; font-size: 11.5px; line-height: 1.6; background: var(--red-lt); border-left: 3px solid var(--red); border-radius: var(--radius); color: var(--gray-800); }
+.fg-bad table { border-collapse: collapse; margin-top: 5px; font-size: 11px; }
+.fg-bad th, .fg-bad td { border: 1px solid #e6b8b3; padding: 2px 8px; background: #fff; color: var(--gray-800); }
+.fg-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 0 14px 14px; }
+.fg-actions .fg-note { font-size: 11px; color: var(--gray-400); }
+@media (max-width: 800px) { .fg-body { grid-template-columns: 1fr; } }
+
 /* ── RESULT TABS ── */
 .res-tabs {
   display: flex; border-bottom: 1px solid var(--gray-200);
@@ -623,7 +650,7 @@ function renderHome() {
     '<div class="card">' +
       '<div class="card-header">' +
         '<div class="step-badge" style="background:var(--gold);color:var(--navy);">i</div>' +
-        '<div><div class="card-title">Expected Data Format</div><div class="card-desc">One row per observation. Arrange your file in this column order \u2014 the tool auto-detects columns left to right.</div></div>' +
+        '<div><div class="card-title">Expected Data Format</div><div class="card-desc">One row per observation, with column names in row 1 (years go down the rows, not across columns). The tool matches columns by name \u2014 or by this order if names differ. Templates can be downloaded on each tool\u2019s upload screen.</div></div>' +
       '</div>' +
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">' +
         '<div>' +
@@ -769,6 +796,155 @@ function heatBg(v) {
   return '#c8e6c9';
 }
 
+/* ── DATA FORMAT GUIDE · TEMPLATE · AUTO-DETECT ── */
+function fmtRows(kind) {
+  var rows = [], yrs = [2015,2016,2017,2018,2019];
+  if (kind === 't2') {
+    var cs = ['U.S.A','Germany','Japan'], base = [10740,8420,5310];
+    yrs.forEach(function(y,yi){ cs.forEach(function(c,ci){ rows.push([y, c, Math.round(base[ci]*(1+0.04*yi)), 'Maize']); }); });
+  } else {
+    var cr = ['Sorghum','Cotton','Groundnut'], ar = [35.2,18.4,15.1];
+    yrs.forEach(function(y,yi){ cr.forEach(function(c,ci){ rows.push([y, c, Math.round((ar[ci]+(ci===0?-1:0.6)*yi)*10)/10, 'Maharashtra']); }); });
+  }
+  return rows;
+}
+var FMT = {
+  t2: {
+    file: 'Export_Market_Template',
+    headers: ['Year','Country','Export_Value','Commodity'],
+    optional: [false,false,false,true],
+    rules: [
+      'Keep <b>one row per Country &times; Year</b> (add a Commodity column only if you have several products).',
+      '<b>Row 1 = column names</b>; data starts in row 2. Only the <b>first sheet</b> of an Excel file is read.',
+      '<b>Year</b>: a single 4-digit number such as 2015. For fiscal years like 2015-16, use the starting year (2015).',
+      '<b>Export_Value</b>: absolute amounts (USD, tonnes, etc.), <b>not percentages</b> &mdash; the tool calculates shares itself. Blank or text cells count as 0.',
+      'Spell every country the same way in all years (<i>U.S.A</i> and <i>USA</i> would be two different markets). Rows labelled Total/All are removed automatically.',
+      'Use at least <b>2 years</b> (10 or more is recommended) so year-to-year switching can be estimated.',
+      'Column names can be anything and in any order &mdash; the tool matches them by name and you can correct the match in Step 2.'
+    ],
+    wide: ['Country','2015','2016','2017']
+  },
+  t1: {
+    file: 'Cropping_Pattern_Template',
+    headers: ['Year','Crop','Area_000ha','State'],
+    optional: [false,false,false,true],
+    rules: [
+      'Keep <b>one row per Crop &times; Year</b> (add a State/Region column only if you have several regions).',
+      '<b>Row 1 = column names</b>; data starts in row 2. Only the <b>first sheet</b> of an Excel file is read.',
+      '<b>Year</b>: a single 4-digit number such as 1970. For agricultural years like 1970-71, use the starting year (1970).',
+      '<b>Area_000ha</b>: absolute area (000 ha, ha, etc.) in the <b>same unit for every year</b> &mdash; not percentages. Blank or text cells count as 0.',
+      'Spell every crop the same way in all years and <b>do not include a Total / Gross cropped area row</b> &mdash; it would be treated as another crop.',
+      'Use at least <b>2 years</b> (10 or more is recommended) so year-to-year shifts can be estimated.',
+      'Column names can be anything and in any order &mdash; the tool matches them by name and you can correct the match in Step 2.'
+    ],
+    wide: ['Crop','1970','1971','1972']
+  }
+};
+
+function fmtGuide(kind, isOpen) {
+  var f = FMT[kind], rows = fmtRows(kind).slice(0,4), i;
+  var head = '<th class="fg-rownum"></th>';
+  for (i = 0; i < f.headers.length; i++) {
+    head += '<th' + (f.optional[i] ? ' class="fg-opt"' : '') + '>' + esc(f.headers[i]) + '<small>' + (f.optional[i] ? 'optional' : 'required') + '</small></th>';
+  }
+  var body = rows.map(function(r, ri){
+    return '<tr><td class="fg-rownum">' + (ri + 2) + '</td>' + r.map(function(v){ return '<td>' + esc(v) + '</td>'; }).join('') + '</tr>';
+  }).join('');
+  var wideHead = f.wide.map(function(h){ return '<th>' + esc(h) + '</th>'; }).join('');
+  return '<details class="fmt-guide"' + (isOpen ? ' open' : '') + '>' +
+    '<summary>📋 Data format required <span class="fg-sub">&mdash; check this before uploading</span></summary>' +
+    '<div class="fg-body">' +
+      '<div>' +
+        '<div class="fg-cap">Your file should look like this</div>' +
+        '<table class="fg-tbl"><thead><tr>' + head + '</tr></thead><tbody>' + body + '</tbody></table>' +
+        '<div style="font-size:11px;color:var(--gray-400);margin-top:5px;">Row numbers on the left show Excel row positions (row 1 is the header).</div>' +
+        '<div class="fg-bad"><strong>✗ Not accepted &mdash; years across columns (wide format):</strong>' +
+          '<table><thead><tr>' + wideHead + '<th>&hellip;</th></tr></thead><tbody><tr><td>' + esc(kind === 't2' ? 'U.S.A' : 'Sorghum') + '</td><td>10740</td><td>11200</td><td>11850</td><td>&hellip;</td></tr></tbody></table>' +
+          'Reshape so that every year is its own row (long format, as on the left).' +
+        '</div>' +
+      '</div>' +
+      '<div>' +
+        '<div class="fg-cap">Rules</div>' +
+        '<ul class="fg-rules">' + f.rules.map(function(r){ return '<li>' + r + '</li>'; }).join('') + '</ul>' +
+      '</div>' +
+    '</div>' +
+    '<div class="fg-actions">' +
+      '<button class="ghost-btn" onclick="downloadTemplate(\'' + kind + '\',\'xlsx\')">⬇ Download Excel template</button>' +
+      '<button class="ghost-btn" onclick="downloadTemplate(\'' + kind + '\',\'csv\')">⬇ Download CSV template</button>' +
+      '<span class="fg-note">Fill the template with your data, then upload it below. Or click &ldquo;Load Sample Data&rdquo; to try the tool first.</span>' +
+    '</div>' +
+  '</details>';
+}
+
+function downloadTemplate(kind, ext) {
+  var f = FMT[kind], aoa = [f.headers].concat(fmtRows(kind));
+  try {
+    if (ext === 'xlsx') {
+      var wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(aoa), 'Data');
+      XLSX.writeFile(wb, f.file + '.xlsx');
+    } else {
+      var csv = aoa.map(function(r){ return r.map(function(v){ var s = String(v); return /[",\n]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s; }).join(','); }).join('\r\n');
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob(['﻿' + csv], { type:'text/csv;charset=utf-8' }));
+      a.download = f.file + '.csv';
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      setTimeout(function(){ URL.revokeObjectURL(a.href); }, 800);
+    }
+    toast('Template downloaded — replace the example rows with your data.', 'success', '✓');
+  } catch (err) { toast('Could not create template: ' + err.message, 'warn', '⚠'); }
+}
+
+function looksWide(cols) {
+  return cols.filter(function(c){ return /^(19|20)\d{2}([-\/]\d{2,4})?$/.test(String(c).trim()); }).length >= 3;
+}
+
+function autoDetectCols(cols, kind) {
+  var used = {}, isT2 = (kind === 't2');
+  function find(re) {
+    for (var i = 0; i < cols.length; i++) {
+      if (!used[cols[i]] && re.test(String(cols[i]).toLowerCase())) { used[cols[i]] = 1; return cols[i]; }
+    }
+    return '';
+  }
+  function nextFree() {
+    for (var i = 0; i < cols.length; i++) { if (!used[cols[i]]) { used[cols[i]] = 1; return cols[i]; } }
+    return '';
+  }
+  var year = find(/year|^yr$|^fy$/);
+  var ent  = find(isT2 ? /country|destination|partner|market|nation/ : /crop|entity|enterprise/);
+  var val  = find(isT2 ? /value|export|usd|amount|qty|quantity|tonne/ : /area|value|\bha\b|000/);
+  var opt  = find(isT2 ? /commodity|product|item|\bhs\b/ : /state|region|district|zone/);
+  if (!year) year = nextFree();
+  if (!ent)  ent  = nextFree();
+  if (!val)  val  = nextFree();
+  return { year: year, ent: ent, val: val, opt: opt };
+}
+
+function uploadNote(T) {
+  if (!T.uploadMsg) return '';
+  var ok = T.uploadMsg.type === 'ok';
+  return '<div style="margin-top:10px;padding:9px 12px;font-size:12px;line-height:1.6;background:' + (ok ? 'var(--green-lt)' : 'var(--red-lt)') + ';border-left:3px solid ' + (ok ? 'var(--green)' : 'var(--red)') + ';border-radius:var(--radius);color:var(--gray-800);">' + T.uploadMsg.html + '</div>';
+}
+
+function checkUploadedRows(T, file, rows, kind) {
+  var cols = rows.length ? Object.keys(rows[0]) : [];
+  var label = kind === 't2' ? 'Year, Country and Export Value' : 'Year, Crop and Area';
+  if (!rows.length || cols.length < 3) {
+    T.rawData = [];
+    T.uploadMsg = { type:'err', html:'<strong>✗ ' + esc(file.name) + '</strong> could not be used: ' + (rows.length ? 'only ' + cols.length + ' column(s) found' : 'no data rows found in the first sheet') + '. The file needs a header row in row 1 and at least 3 columns (' + label + '). See the format guide above.' };
+    toast('File format not recognised — see the format guide.', 'warn', '⚠');
+    return false;
+  }
+  if (looksWide(cols)) {
+    T.rawData = [];
+    T.uploadMsg = { type:'err', html:'<strong>✗ ' + esc(file.name) + '</strong> has years as column headings (wide format). Reshape the data so that <b>each year is its own row</b> &mdash; one row per ' + (kind === 't2' ? 'Country' : 'Crop') + ' and Year &mdash; then upload again. Use the template above as a model.' };
+    toast('Wide format detected — please use one row per year (see guide).', 'warn', '⚠');
+    return false;
+  }
+  return true;
+}
+
 function colOptions(data, selected) {
   selected = selected || '';
   var cols = Object.keys(data[0] || {});
@@ -819,6 +995,7 @@ function renderT2DataCard() {
       '<div class="step-badge">1</div>' +
       '<div><div class="card-title">Upload Dataset</div><div class="card-desc">Upload export data with destination country, year, and value columns. Commodity column is optional.</div></div>' +
     '</div>' +
+    fmtGuide('t2', !T2.rawData.length) +
 
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">' +
       '<div>' +
@@ -832,6 +1009,7 @@ function renderT2DataCard() {
         '</div>' +
         '<input type="file" id="t2file" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleT2File(event)">' +
         '<button onclick="loadT2Sample()" style="width:100%;margin-top:10px;" class="ghost-btn">\u26a1 Load Sample Data (India Cotton Exports)</button>' +
+        uploadNote(T2) +
       '</div>' +
 
       '<div>' +
@@ -959,12 +1137,14 @@ function handleT2File(e) {
       var wb = XLSX.read(ev.target.result, { type:'binary' });
       var ws = wb.Sheets[wb.SheetNames[0]];
       var raw = XLSX.utils.sheet_to_json(ws);
-      T2.rawData = raw.map(function(r){ var c={}; Object.keys(r).forEach(function(k){ c[k.trim()]=r[k]; }); return c; });
-      if (T2.rawData.length) {
-        var cols = Object.keys(T2.rawData[0]);
-        T2.colYear = cols[0] || ''; T2.colCountry = cols[1] || ''; T2.colValue = cols[2] || ''; T2.colCommodity = '';
-      }
-      toast('Data loaded successfully! ' + T2.rawData.length + ' rows detected.', 'success', '\u2713');
+      var rows = raw.map(function(r){ var c={}; Object.keys(r).forEach(function(k){ c[k.trim()]=r[k]; }); return c; });
+      if (!checkUploadedRows(T2, file, rows, 't2')) { renderT2(); return; }
+      T2.rawData = rows;
+      var cols = Object.keys(rows[0]);
+      var d = autoDetectCols(cols, 't2');
+      T2.colYear = d.year; T2.colCountry = d.ent; T2.colValue = d.val; T2.colCommodity = d.opt;
+      T2.uploadMsg = { type:'ok', html:'<strong>\u2713 ' + esc(file.name) + '</strong> &mdash; ' + rows.length + ' rows, ' + cols.length + ' columns.<br>Auto-matched: Year = <b>' + esc(d.year) + '</b>, Country = <b>' + esc(d.ent) + '</b>, Value = <b>' + esc(d.val) + '</b>' + (d.opt ? ', Commodity = <b>' + esc(d.opt) + '</b>' : '') + '. Check Step 2, then click <b>Process Data</b>.' };
+      toast('Data loaded successfully! ' + rows.length + ' rows detected.', 'success', '\u2713');
       renderT2();
     } catch(err) { toast('Error reading file: ' + err.message, 'warn', '\u26a0'); }
   };
@@ -988,6 +1168,7 @@ function loadT2Sample() {
     });
   });
   T2.colCountry='Country'; T2.colCommodity='Commodity'; T2.colYear='Year'; T2.colValue='Export_Value';
+  T2.uploadMsg = { type:'ok', html:'<strong>✓ Sample dataset loaded</strong> &mdash; India cotton exports (columns: Country, Commodity, Year, Export_Value). Use it as a model for your own file.' };
   setTimeout(function(){ processT2(); }, 200);
 }
 
@@ -999,6 +1180,7 @@ function processT2() {
   if (!cc||!cy||!cv||!T2.rawData.length) { toast('Please upload data and map required columns first.', 'warn', '\u26a0'); return; }
   T2.colCountry=cc; T2.colYear=cy; T2.colValue=cv; T2.colCommodity=com;
   T2.data = T2.rawData.map(function(r){ return { country:String(r[cc]||'').trim(), year:Number(r[cy]), value:Number(r[cv])||0, commodity:com?String(r[com]||'').trim():'All' }; }).filter(function(r){ return r.country&&r.year&&!isNaN(r.year)&&['TOTAL','Total','total','ALL','All','all'].indexOf(r.country.trim())<0; });
+  if (!T2.data.length) { toast('No valid rows found. Make sure the Year column holds 4-digit years (e.g. 2015) and the Country column is not empty.', 'warn', '⚠'); return; }
   T2.countries   = [...new Set(T2.data.map(function(r){ return r.country; }))].sort();
   T2.years       = [...new Set(T2.data.map(function(r){ return r.year; }))].sort(function(a,b){ return a-b; });
   T2.commodities = com ? [...new Set(T2.data.map(function(r){ return r.commodity; }))].sort() : [];
@@ -1256,6 +1438,7 @@ function renderT1DataCard() {
       '<div class="step-badge">1</div>' +
       '<div><div class="card-title">Upload Dataset</div><div class="card-desc">Upload crop area data with crop/entity, year, and area/value columns. State/region column is optional.</div></div>' +
     '</div>' +
+    fmtGuide('t1', !T1.rawData.length) +
 
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">' +
       '<div>' +
@@ -1269,6 +1452,7 @@ function renderT1DataCard() {
         '</div>' +
         '<input type="file" id="t1file" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleT1File(event)">' +
         '<button onclick="loadT1Sample()" style="width:100%;margin-top:10px;" class="ghost-btn">\u26a1 Load Sample Data (Sorghum Cropping Patterns)</button>' +
+        uploadNote(T1) +
       '</div>' +
 
       '<div>' +
@@ -1388,12 +1572,14 @@ function handleT1File(e) {
     try {
       var wb = XLSX.read(ev.target.result, { type:'binary' });
       var raw = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
-      T1.rawData = raw.map(function(r){ var c={}; Object.keys(r).forEach(function(k){ c[k.trim()]=r[k]; }); return c; });
-      if (T1.rawData.length) {
-        var cols = Object.keys(T1.rawData[0]);
-        T1.colYear=cols[0]||''; T1.colEntity=cols[1]||''; T1.colValue=cols[2]||''; T1.colCommodity='';
-      }
-      toast('Data loaded successfully! ' + T1.rawData.length + ' rows detected.', 'success', '\u2713');
+      var rows = raw.map(function(r){ var c={}; Object.keys(r).forEach(function(k){ c[k.trim()]=r[k]; }); return c; });
+      if (!checkUploadedRows(T1, file, rows, 't1')) { renderT1(); return; }
+      T1.rawData = rows;
+      var cols = Object.keys(rows[0]);
+      var d = autoDetectCols(cols, 't1');
+      T1.colYear = d.year; T1.colEntity = d.ent; T1.colValue = d.val; T1.colCommodity = d.opt;
+      T1.uploadMsg = { type:'ok', html:'<strong>\u2713 ' + esc(file.name) + '</strong> &mdash; ' + rows.length + ' rows, ' + cols.length + ' columns.<br>Auto-matched: Year = <b>' + esc(d.year) + '</b>, Crop = <b>' + esc(d.ent) + '</b>, Area = <b>' + esc(d.val) + '</b>' + (d.opt ? ', State = <b>' + esc(d.opt) + '</b>' : '') + '. Check Step 2, then click <b>Process Data</b>.' };
+      toast('Data loaded successfully! ' + rows.length + ' rows detected.', 'success', '\u2713');
       renderT1();
     } catch(err) { toast('Error reading file: ' + err.message, 'warn', '\u26a0'); }
   };
@@ -1418,6 +1604,7 @@ function loadT1Sample() {
     });
   });
   T1.colEntity='Crop'; T1.colCommodity='State'; T1.colYear='Year'; T1.colValue='Area_000ha';
+  T1.uploadMsg = { type:'ok', html:'<strong>✓ Sample dataset loaded</strong> &mdash; sorghum cropping patterns (columns: Crop, State, Year, Area_000ha). Use it as a model for your own file.' };
   setTimeout(function(){ processT1(); }, 200);
 }
 
@@ -1429,6 +1616,7 @@ function processT1() {
   if (!ce||!cy||!cv||!T1.rawData.length) { toast('Please upload data and map required columns first.', 'warn', '\u26a0'); return; }
   T1.colEntity=ce; T1.colYear=cy; T1.colValue=cv; T1.colCommodity=com;
   T1.data = T1.rawData.map(function(r){ return { entity:String(r[ce]||'').trim(), year:Number(r[cy]), value:Number(r[cv])||0, commodity:com?String(r[com]||'').trim():'All' }; }).filter(function(r){ return r.entity&&r.year; });
+  if (!T1.data.length) { toast('No valid rows found. Make sure the Year column holds 4-digit years (e.g. 1970) and the Crop column is not empty.', 'warn', '⚠'); return; }
   T1.entities    = [...new Set(T1.data.map(function(r){ return r.entity; }))].sort();
   T1.years       = [...new Set(T1.data.map(function(r){ return r.year; }))].sort(function(a,b){ return a-b; });
   T1.commodities = com ? [...new Set(T1.data.map(function(r){ return r.commodity; }))].sort() : [];
@@ -1781,6 +1969,5 @@ document.addEventListener('drop', function(e){
 // \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
 showHome();
 </script>
-<script>window.addEventListener('scroll',()=>document.getElementById('hdr').classList.toggle('scrolled',window.scrollY>30));</script>
 </body>
 </html>
