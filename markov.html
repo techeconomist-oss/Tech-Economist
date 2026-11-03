@@ -252,6 +252,33 @@ body {
 }
 
 /* ── BUTTONS ── */
+.mpick-cap { font-size:11px; font-weight:700; color:var(--navy); text-transform:uppercase; letter-spacing:.05em; margin-bottom:8px; }
+.mpick-cap span { text-transform:none; letter-spacing:0; font-weight:400; color:var(--gray-400); margin-left:8px; }
+.mpick-wrap { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:10px; }
+.mpick { display:flex; flex-direction:column; gap:3px; border:1px solid var(--gray-200); border-radius:var(--radius); padding:10px 12px 10px 34px; cursor:pointer; position:relative; background:var(--white); font-size:12.5px; }
+.mpick input { position:absolute; left:12px; top:12px; }
+.mpick span { font-size:11.5px; color:var(--gray-600); line-height:1.5; }
+.mpick.on { border-color:var(--navy); box-shadow:0 0 0 1px var(--navy) inset; }
+.mbadge { font-style:normal; font-size:9.5px; font-weight:700; background:var(--gold); color:var(--navy); padding:1px 6px; border-radius:10px; margin-left:4px; vertical-align:1px; }
+.mtip { display:none; position:absolute; z-index:60; top:calc(100% + 8px); left:0; width:340px; max-width:80vw; background:var(--navy); color:#fff; border-radius:8px; padding:12px 14px; box-shadow:0 10px 28px rgba(0,0,0,.28); font-size:12px; line-height:1.55; pointer-events:none; }
+.mtip::before { content:''; position:absolute; top:-6px; left:22px; border:6px solid transparent; border-top:0; border-bottom-color:var(--navy); }
+.mpick-wrap .mpick:nth-child(4) .mtip, .mpick-wrap .mpick:nth-child(3) .mtip { left:auto; right:0; }
+.mpick-wrap .mpick:nth-child(4) .mtip::before, .mpick-wrap .mpick:nth-child(3) .mtip::before { left:auto; right:22px; }
+@media (hover:hover) { .mpick:hover .mtip { display:block; } }
+.mtip p, .minfo p { margin:4px 0 6px; }
+.mtip ul, .minfo ul { margin:2px 0 6px; padding-left:18px; }
+.mtip-h { font-weight:700; font-size:12.5px; margin-bottom:2px; }
+.mtip-h em { font-style:normal; font-size:9.5px; background:var(--gold); color:var(--navy); padding:1px 6px; border-radius:10px; margin-left:4px; }
+.mtip-k { font-weight:700; font-size:10.5px; text-transform:uppercase; letter-spacing:.05em; margin-top:6px; color:var(--gold-lt, #f5d27a); }
+.mtip-k.warn { color:#ffb4a8; }
+.minfo { border:1px solid var(--gray-200); border-left:4px solid var(--navy); border-radius:var(--radius); background:var(--gray-50); padding:10px 14px; margin-bottom:14px; font-size:12.5px; line-height:1.6; color:var(--gray-800); }
+.minfo .mtip-k { color:var(--navy); }
+.minfo .mtip-k.warn { color:var(--red); }
+.minfo .mnote { font-size:11.5px; color:var(--gray-600); font-style:italic; margin-top:8px; }
+.mgme { display:flex; flex-wrap:wrap; gap:16px; margin:8px 0 2px; padding-top:8px; border-top:1px dashed var(--gray-200); font-size:12px; font-weight:600; color:var(--navy); }
+.mgme select { margin-left:6px; font:inherit; font-weight:400; padding:3px 6px; border:1px solid var(--gray-200); border-radius:6px; }
+@media (max-width: 900px) { .mpick-wrap { grid-template-columns:1fr 1fr; } }
+@media (max-width: 560px) { .mpick-wrap { grid-template-columns:1fr; } .mtip { display:none !important; } }
 .run-btn {
   width: 100%; padding: 13px; font-size: 14px; font-weight: 700;
   background: var(--navy); color: var(--white); border: none;
@@ -730,39 +757,445 @@ function projectSimplex(v) {
   else { for (var i = 0; i < n; i++) v[i] = 1/n; }
 }
 
-function solveMADLP(entities, shareByYear, years) {
-  var n = entities.length, T = years.length;
-  if (T < 2) return null;
-  var P = [];
-  for (var i = 0; i < n; i++) {
-    var p = [];
-    for (var j = 0; j < n; j++) p.push(1/n);
-    var xVec = [], yMat = [];
-    for (var t = 1; t < T; t++) {
-      xVec.push((shareByYear[years[t-1]] || {})[entities[i]] || 0);
-      var yRow = entities.map(function(c){ return (shareByYear[years[t]] || {})[c] || 0; });
-      yMat.push(yRow);
+/* ══ MARKOV ESTIMATORS (joint, all rows estimated together) ══
+   Model: s_j(t) = Σ_i s_i(t-1) · P_ij + e_j(t),  P_ij ≥ 0,  Σ_j P_ij = 1
+   - MAD-LP : minimise Σ_t Σ_j |e_j(t)|   (linear programme, two-phase simplex)
+   - LJZ    : minimise Σ_t Σ_j e_j(t)^2   (restricted least squares, Lee-Judge-Zellner;
+              solved by accelerated projected gradient — convex, so the optimum is global) */
+
+function mkBuildXY(entities, shareByYear, years) {
+  var X = [], Y = [];
+  for (var t = 1; t < years.length; t++) {
+    var a = shareByYear[years[t-1]] || {}, b = shareByYear[years[t]] || {};
+    X.push(entities.map(function(c){ return a[c] || 0; }));
+    Y.push(entities.map(function(c){ return b[c] || 0; }));
+  }
+  return { X: X, Y: Y };
+}
+
+/* Two-phase dense tableau simplex for:  min c·x  s.t.  A x = b (b ≥ 0), x ≥ 0.
+   basis0: initial basic column for each row, or -1 → an artificial is added for that row. */
+function mkSimplex(A, b, c, basis0) {
+  var m = A.length, n = c.length, EPS = 1e-10, i, j, k;
+  var art = [];
+  for (i = 0; i < m; i++) if (basis0[i] < 0) art.push(i);
+  var N = n + art.length;
+  var T = [];
+  for (i = 0; i < m; i++) {
+    var row = new Float64Array(N + 1);
+    for (j = 0; j < n; j++) row[j] = A[i][j];
+    row[N] = b[i];
+    T.push(row);
+  }
+  var basis = basis0.slice(), pivotNZ = [];
+  art.forEach(function(r, k){ T[r][n + k] = 1; basis[r] = n + k; });
+
+  function pivot(r, col) {
+    var pr = T[r], pv = pr[col], nz = [];
+    for (var q = 0; q <= N; q++) { if (pr[q] !== 0) { pr[q] /= pv; nz.push(q); } }
+    var L = nz.length;
+    for (var s = 0; s < m; s++) {
+      if (s === r) continue;
+      var f = T[s][col];
+      if (Math.abs(f) > 1e-15) { var rs = T[s]; for (var q2 = 0; q2 < L; q2++) { var qq = nz[q2]; rs[qq] -= f * pr[qq]; } }
     }
-    for (var iter = 0; iter < 200; iter++) {
-      var newP = [];
-      for (var j = 0; j < n; j++) {
-        var num = 0, den = 0;
-        for (var t = 0; t < xVec.length; t++) {
-          var resid = yMat[t][j] - xVec[t] * p[j];
-          var w = 1 / Math.max(Math.abs(resid), 1e-6);
-          num += w * xVec[t] * yMat[t][j];
-          den += w * xVec[t] * xVec[t];
-        }
-        newP.push(den > 0 ? num / den : 0);
+    basis[r] = col;
+    pivotNZ = nz;
+  }
+  function run(cost, allowed) {
+    var z = new Float64Array(N + 1);           // reduced-cost row: z_j = c_j - c_B B^-1 a_j
+    for (var q = 0; q <= N; q++) z[q] = q < N ? cost[q] : 0;
+    for (var r = 0; r < m; r++) {
+      var cb = cost[basis[r]];
+      if (cb !== 0) for (var q3 = 0; q3 <= N; q3++) z[q3] -= cb * T[r][q3];
+    }
+    var maxIt = 50 * (m + N), it = 0, bland = false, lastObj = Infinity, stall = 0;
+    while (it++ < maxIt) {
+      var col = -1, best = -1e-9;
+      for (var q4 = 0; q4 < N; q4++) {
+        if (!allowed(q4) || z[q4] >= -1e-9) continue;
+        if (bland) { col = q4; break; }
+        if (z[q4] < best) { best = z[q4]; col = q4; }
       }
-      projectSimplex(newP);
-      var diff = newP.reduce(function(s,v,j){ return s + Math.abs(v - p[j]); }, 0);
-      p = newP;
-      if (diff < 1e-8) break;
+      if (col < 0) return true;
+      var r2 = -1, ratio = Infinity;
+      for (var s = 0; s < m; s++) {
+        var a = T[s][col];
+        if (a > EPS) {
+          var rt = T[s][N] / a;
+          if (rt < ratio - 1e-12 || (Math.abs(rt - ratio) <= 1e-12 && basis[s] < basis[r2])) { ratio = rt; r2 = s; }
+        }
+      }
+      if (r2 < 0) return false;                // unbounded (cannot happen here)
+      var fz = z[col];
+      pivot(r2, col);
+      var prw = T[r2];
+      for (var q5 = 0; q5 < pivotNZ.length; q5++) { var qz = pivotNZ[q5]; z[qz] -= fz * prw[qz]; }
+      var obj = -z[N];
+      if (obj < lastObj - 1e-12) { lastObj = obj; stall = 0; } else if (++stall > 50) bland = true;
     }
-    P.push(p);
+    return true;
+  }
+  if (art.length) {
+    var c1 = new Float64Array(N);
+    for (k = 0; k < art.length; k++) c1[n + k] = 1;
+    run(c1, function(){ return true; });
+    // drive any artificial still in the basis (at zero) out of it
+    for (i = 0; i < m; i++) if (basis[i] >= n) {
+      for (j = 0; j < n; j++) if (Math.abs(T[i][j]) > 1e-9) { pivot(i, j); break; }
+    }
+  }
+  var c2 = new Float64Array(N);
+  for (j = 0; j < n; j++) c2[j] = c[j];
+  run(c2, function(q){ return q < n; });
+  var x = new Float64Array(n);
+  for (i = 0; i < m; i++) if (basis[i] < n) x[basis[i]] = T[i][N];
+  return x;
+}
+
+function solveMADLP(entities, shareByYear, years) {
+  var n = entities.length;
+  if (years.length < 2 || n < 1) return null;
+  var d = mkBuildXY(entities, shareByYear, years), X = d.X, Y = d.Y, m = X.length;
+  // variables: P (n*n, row-major P[i][j] at i*n+j), u (m*n), v (m*n); e = u - v
+  var nv = n * n + 2 * m * n, A = [], b = [], basis = [], c = new Float64Array(nv);
+  for (var q = n * n; q < nv; q++) c[q] = 1;
+  for (var t = 0; t < m; t++) for (var j = 0; j < n; j++) {
+    var row = new Float64Array(nv);
+    for (var i = 0; i < n; i++) row[i * n + j] = X[t][i];
+    var ui = n * n + t * n + j, vi = n * n + m * n + t * n + j;
+    var y = Y[t][j];
+    if (y >= 0) { row[ui] = 1; row[vi] = -1; b.push(y); basis.push(ui); }
+    else { for (var k = 0; k < nv; k++) row[k] = -row[k]; row[ui] = -1; row[vi] = 1; b.push(-y); basis.push(vi); }
+    A.push(row);
+  }
+  for (var i2 = 0; i2 < n; i2++) {
+    var r = new Float64Array(nv);
+    for (var j2 = 0; j2 < n; j2++) r[i2 * n + j2] = 1;
+    A.push(r); b.push(1); basis.push(-1);
+  }
+  var x = mkSimplex(A, b, c, basis), P = [];
+  for (var a = 0; a < n; a++) {
+    var p = [];
+    for (var bb = 0; bb < n; bb++) p.push(Math.max(0, x[a * n + bb]));
+    var s = p.reduce(function(u, v){ return u + v; }, 0);
+    P.push(s > 0 ? p.map(function(v){ return v / s; }) : p.map(function(){ return 1 / n; }));
   }
   return P;
+}
+
+function mkProjSimplex(v) {           // Euclidean projection onto {p ≥ 0, Σp = 1}
+  var u = v.slice().sort(function(a, b){ return b - a; }), cs = 0, rho = 0, th = 0;
+  for (var i = 0; i < u.length; i++) { cs += u[i]; var t = (cs - 1) / (i + 1); if (u[i] - t > 0) { rho = i; th = t; } }
+  return v.map(function(x){ return Math.max(0, x - th); });
+}
+
+function solveLJZ(entities, shareByYear, years) {
+  var n = entities.length;
+  if (years.length < 2 || n < 1) return null;
+  var d = mkBuildXY(entities, shareByYear, years), X = d.X, Y = d.Y, m = X.length, i, j, k, t;
+  var G = [], H = [];                         // G = XᵀX (n×n), H = XᵀY (n×n)
+  for (i = 0; i < n; i++) { G.push(new Float64Array(n)); H.push(new Float64Array(n)); }
+  for (t = 0; t < m; t++) for (i = 0; i < n; i++) {
+    var xi = X[t][i]; if (!xi) continue;
+    for (k = 0; k < n; k++) { G[i][k] += xi * X[t][k]; H[i][k] += xi * Y[t][k]; }
+  }
+  // Lipschitz constant: largest eigenvalue of G (power iteration), gradient of ½‖Y−XP‖² is G P − H
+  var v = new Float64Array(n).fill(1), L = 0;
+  for (var it = 0; it < 200; it++) {
+    var w = new Float64Array(n);
+    for (i = 0; i < n; i++) for (k = 0; k < n; k++) w[i] += G[i][k] * v[k];
+    var nr = Math.sqrt(w.reduce(function(s, a){ return s + a * a; }, 0)) || 1;
+    L = nr; for (i = 0; i < n; i++) v[i] = w[i] / nr;
+  }
+  L = Math.max(L * 1.01, 1e-12);
+  var P = [], Z = [], tk = 1;
+  for (i = 0; i < n; i++) { var r = []; for (j = 0; j < n; j++) r.push(1 / n); P.push(r); Z.push(r.slice()); }
+  for (var iter = 0; iter < 20000; iter++) {
+    var Pn = [], change = 0;
+    for (i = 0; i < n; i++) {
+      var g = [];
+      for (j = 0; j < n; j++) { var s = -H[i][j]; for (k = 0; k < n; k++) s += G[i][k] * Z[k][j]; g.push(Z[i][j] - s / L); }
+      Pn.push(mkProjSimplex(g));
+    }
+    var tn = (1 + Math.sqrt(1 + 4 * tk * tk)) / 2, beta = (tk - 1) / tn;
+    for (i = 0; i < n; i++) for (j = 0; j < n; j++) {
+      change = Math.max(change, Math.abs(Pn[i][j] - P[i][j]));
+      Z[i][j] = Pn[i][j] + beta * (Pn[i][j] - P[i][j]);
+    }
+    P = Pn; tk = tn;
+    if (change < 1e-11 && iter > 50) break;
+  }
+  return P;
+}
+
+/* ── Restricted GLS (two-step, as in the methodology note) ──
+   Step 1: restricted LS.  Step 2: for each year t build the multinomial covariance
+   Var_j = Σ_i y_i p_ij (1−p_ij),  Cov_jk = −Σ_i y_i p_ij p_ik,
+   drop the last state (shares sum to 1, so Ω_t is singular), add a 1e-6 ridge, invert,
+   and minimise Σ_t ũ_t' Ω_t⁻¹ ũ_t subject to P ≥ 0, rows sum to 1. */
+function mkInv(M) {
+  var n = M.length, A = M.map(function(r, i){ var e = new Array(n).fill(0); e[i] = 1; return Array.from(r).concat(e); });
+  for (var c = 0; c < n; c++) {
+    var p = c; for (var r = c + 1; r < n; r++) if (Math.abs(A[r][c]) > Math.abs(A[p][c])) p = r;
+    var tmp = A[c]; A[c] = A[p]; A[p] = tmp;
+    var pv = A[c][c]; if (Math.abs(pv) < 1e-300) pv = 1e-300;
+    for (var k = 0; k < 2 * n; k++) A[c][k] /= pv;
+    for (var r2 = 0; r2 < n; r2++) if (r2 !== c) { var f = A[r2][c]; if (f) for (var k2 = 0; k2 < 2 * n; k2++) A[r2][k2] -= f * A[c][k2]; }
+  }
+  return A.map(function(r){ return r.slice(n); });
+}
+function mkWeightedRLS(X, Y, W, P0) {     // W[t]: r×r weight (last row/col zero)
+  var m = X.length, n = X[0].length, i, j, k, t;
+  function grad(P) {                       // returns {g, f}
+    var g = [], f = 0;
+    for (i = 0; i < n; i++) g.push(new Float64Array(n));
+    for (t = 0; t < m; t++) {
+      var e = new Float64Array(n);
+      for (j = 0; j < n; j++) { var s = Y[t][j]; for (i = 0; i < n; i++) s -= X[t][i] * P[i][j]; e[j] = s; }
+      var We = new Float64Array(n);
+      for (j = 0; j < n; j++) { var s2 = 0; for (k = 0; k < n; k++) s2 += W[t][j][k] * e[k]; We[j] = s2; f += 0.5 * e[j] * s2; }
+      for (i = 0; i < n; i++) { var xi = X[t][i]; if (xi) for (j = 0; j < n; j++) g[i][j] -= xi * We[j]; }
+    }
+    return { g: g, f: f };
+  }
+  function hv(D) {                          // Hessian-vector product
+    var out = []; for (i = 0; i < n; i++) out.push(new Float64Array(n));
+    for (t = 0; t < m; t++) {
+      var d = new Float64Array(n);
+      for (j = 0; j < n; j++) { var s = 0; for (i = 0; i < n; i++) s += X[t][i] * D[i][j]; d[j] = s; }
+      var Wd = new Float64Array(n);
+      for (j = 0; j < n; j++) { var s2 = 0; for (k = 0; k < n; k++) s2 += W[t][j][k] * d[k]; Wd[j] = s2; }
+      for (i = 0; i < n; i++) { var xi = X[t][i]; if (xi) for (j = 0; j < n; j++) out[i][j] += xi * Wd[j]; }
+    }
+    return out;
+  }
+  var D = []; for (i = 0; i < n; i++) { D.push(new Float64Array(n)); for (j = 0; j < n; j++) D[i][j] = Math.sin(1 + i * n + j); }
+  var L = 1;
+  for (var it = 0; it < 100; it++) {
+    var H = hv(D), nr = 0;
+    for (i = 0; i < n; i++) for (j = 0; j < n; j++) nr += H[i][j] * H[i][j];
+    nr = Math.sqrt(nr) || 1; L = nr;
+    for (i = 0; i < n; i++) for (j = 0; j < n; j++) D[i][j] = H[i][j] / nr;
+  }
+  L *= 1.05;
+  var P = P0.map(function(r){ return r.slice(); }), Z = P.map(function(r){ return r.slice(); }), tk = 1;
+  for (var iter = 0; iter < 200000; iter++) {
+    var gz = grad(Z).g, Pn = [], change = 0;
+    for (i = 0; i < n; i++) { var v = []; for (j = 0; j < n; j++) v.push(Z[i][j] - gz[i][j] / L); Pn.push(mkProjSimplex(v)); }
+    // gradient-based adaptive restart (O'Donoghue & Candès)
+    var dot = 0;
+    for (i = 0; i < n; i++) for (j = 0; j < n; j++) { dot += (Z[i][j] - Pn[i][j]) * (Pn[i][j] - P[i][j]); change = Math.max(change, Math.abs(Pn[i][j] - P[i][j])); }
+    if (dot > 0) tk = 1;
+    var tn = (1 + Math.sqrt(1 + 4 * tk * tk)) / 2, beta = (tk - 1) / tn;
+    for (i = 0; i < n; i++) for (j = 0; j < n; j++) Z[i][j] = Pn[i][j] + beta * (Pn[i][j] - P[i][j]);
+    P = Pn; tk = tn;
+    if (change < 1e-12 && iter > 50) break;
+  }
+  return P;
+}
+function solveRGLS(entities, shareByYear, years) {
+  var n = entities.length;
+  if (years.length < 2 || n < 2) return solveLJZ(entities, shareByYear, years);
+  var d = mkBuildXY(entities, shareByYear, years), X = d.X, Y = d.Y, m = X.length;
+  var P = solveLJZ(entities, shareByYear, years), W = [];
+  for (var t = 0; t < m; t++) {
+    var y0 = X[t], V = [];
+    for (var j = 0; j < n - 1; j++) {
+      var row = [];
+      for (var k = 0; k < n - 1; k++) {
+        var s = 0;
+        for (var i = 0; i < n; i++) s += j === k ? y0[i] * P[i][j] * (1 - P[i][j]) : -y0[i] * P[i][j] * P[i][k];
+        row.push(s + (j === k ? 1e-6 : 0));
+      }
+      V.push(row);
+    }
+    var Wi = mkInv(V), Wf = [];
+    for (var a = 0; a < n; a++) { var r2 = new Float64Array(n); if (a < n - 1) for (var b = 0; b < n - 1; b++) r2[b] = Wi[a][b]; Wf.push(r2); }
+    W.push(Wf);
+  }
+  return mkWeightedRLS(X, Y, W, P);
+}
+
+/* ── Generalised maximum entropy / cross-entropy (Golan, Judge & Miller 1996) ──
+   Errors written on a 3-point support v = (−c, 0, c), c = cSigma × largest s.d. of a share series.
+   Prior Q: uniform (pure GME) or loyalty (diagonal 0.5, rest spread evenly) → GCE.
+   Solved through the unconstrained dual with L-BFGS. */
+function solveGME(entities, shareByYear, years, opts) {
+  opts = opts || {};
+  var n = entities.length;
+  if (years.length < 2 || n < 1) return null;
+  var d = mkBuildXY(entities, shareByYear, years), X = d.X, Y = d.Y, m = X.length, i, j, t, q;
+  var cS = opts.cSigma || 3, M = 3, sdMax = 0;
+  for (j = 0; j < n; j++) {
+    var mu = 0; for (t = 0; t < m; t++) mu += Y[t][j]; mu /= m;
+    var vv = 0; for (t = 0; t < m; t++) vv += (Y[t][j] - mu) * (Y[t][j] - mu);
+    sdMax = Math.max(sdMax, Math.sqrt(vv / m));
+  }
+  if (sdMax <= 0) sdMax = 1e-3;
+  var v = [-cS * sdMax, 0, cS * sdMax];
+  var logQ = [];
+  for (i = 0; i < n; i++) {
+    var r = [];
+    for (j = 0; j < n; j++) r.push(Math.log(opts.prior === 'loyalty' && n > 1 ? (i === j ? 0.5 : 0.5 / (n - 1)) : 1 / n));
+    logQ.push(r);
+  }
+  function evalDual(lam) {            // lam: Float64Array(m*n) → {f, g, P}
+    var A = [], P = [], f = 0, g = new Float64Array(m * n);
+    for (i = 0; i < n; i++) {
+      var a = [], mx = -Infinity;
+      for (j = 0; j < n; j++) { var s = logQ[i][j]; for (t = 0; t < m; t++) s -= X[t][i] * lam[t * n + j]; a.push(s); if (s > mx) mx = s; }
+      var se = 0; for (j = 0; j < n; j++) se += Math.exp(a[j] - mx);
+      f += mx + Math.log(se);
+      P.push(a.map(function(x){ return Math.exp(x - mx) / se; }));
+    }
+    for (t = 0; t < m; t++) for (j = 0; j < n; j++) {
+      var l = lam[t * n + j], bm = -Infinity, bs = [];
+      for (q = 0; q < M; q++) { var bq = -l * v[q]; bs.push(bq); if (bq > bm) bm = bq; }
+      var es = 0, ev = 0;
+      for (q = 0; q < M; q++) { var w = Math.exp(bs[q] - bm); es += w; ev += w * v[q]; }
+      f += bm + Math.log(es) + l * Y[t][j];
+      var fit = 0; for (i = 0; i < n; i++) fit += X[t][i] * P[i][j];
+      g[t * n + j] = Y[t][j] - fit - ev / es;
+    }
+    return { f: f, g: g, P: P };
+  }
+  // L-BFGS
+  var N = m * n, x = new Float64Array(N), cur = evalDual(x), S = [], Yh = [], H = 10;
+  for (var iter = 0; iter < 5000; iter++) {
+    var gmax = 0; for (q = 0; q < N; q++) gmax = Math.max(gmax, Math.abs(cur.g[q]));
+    if (gmax < 1e-10) break;
+    var dir = Float64Array.from(cur.g, function(z){ return -z; }), al = [];
+    for (var k = S.length - 1; k >= 0; k--) {
+      var rho = 1 / dot(Yh[k], S[k]), a2 = rho * dot(S[k], dir); al[k] = a2;
+      for (q = 0; q < N; q++) dir[q] -= a2 * Yh[k][q];
+    }
+    if (S.length) { var gam = dot(S[S.length-1], Yh[S.length-1]) / dot(Yh[S.length-1], Yh[S.length-1]); for (q = 0; q < N; q++) dir[q] *= gam; }
+    for (var k2 = 0; k2 < S.length; k2++) {
+      var rho2 = 1 / dot(Yh[k2], S[k2]), b2 = rho2 * dot(Yh[k2], dir);
+      for (q = 0; q < N; q++) dir[q] += S[k2][q] * (al[k2] - b2);
+    }
+    var gd = dot(cur.g, dir);
+    if (gd >= 0) { dir = Float64Array.from(cur.g, function(z){ return -z; }); gd = dot(cur.g, dir); S = []; Yh = []; }
+    var step = 1, nx, nxt;
+    for (var ls = 0; ls < 60; ls++) {
+      nx = new Float64Array(N); for (q = 0; q < N; q++) nx[q] = x[q] + step * dir[q];
+      nxt = evalDual(nx);
+      if (nxt.f <= cur.f + 1e-4 * step * gd) break;
+      step *= 0.5;
+    }
+    var sv = new Float64Array(N), yv = new Float64Array(N);
+    for (q = 0; q < N; q++) { sv[q] = nx[q] - x[q]; yv[q] = nxt.g[q] - cur.g[q]; }
+    if (dot(sv, yv) > 1e-16) { S.push(sv); Yh.push(yv); if (S.length > H) { S.shift(); Yh.shift(); } }
+    var fprev = cur.f; x = nx; cur = nxt;
+    if (Math.abs(fprev - cur.f) < 1e-14 * Math.max(1, Math.abs(cur.f)) && gmax < 1e-7) break;
+    if (step < 1e-12) break;
+  }
+  function dot(a, b){ var s = 0; for (var z = 0; z < a.length; z++) s += a[z] * b[z]; return s; }
+  return cur.P;
+}
+
+function solveMarkov(method, entities, shareByYear, years, opts) {
+  if (method === 'ljz') return solveLJZ(entities, shareByYear, years);
+  if (method === 'rgls') return solveRGLS(entities, shareByYear, years);
+  if (method === 'gme') return solveGME(entities, shareByYear, years, opts);
+  return solveMADLP(entities, shareByYear, years);
+}
+
+function markovFit(entities, shareByYear, years, P) {   // in-sample fit statistics
+  var d = mkBuildXY(entities, shareByYear, years), X = d.X, Y = d.Y, n = entities.length;
+  var ae = 0, se = 0, cnt = 0;
+  for (var t = 0; t < X.length; t++) for (var j = 0; j < n; j++) {
+    var f = 0; for (var i = 0; i < n; i++) f += X[t][i] * P[i][j];
+    var e = Y[t][j] - f; ae += Math.abs(e); se += e * e; cnt++;
+  }
+  return { mad: cnt ? ae / cnt : 0, rmse: cnt ? Math.sqrt(se / cnt) : 0, obs: cnt };
+}
+
+
+var METHOD_NAME = { mad:'MAD-LP', ljz:'LJZ', rgls:'Restricted GLS', gme:'Maximum Entropy' };
+var METHOD_LONG = {
+  mad:'MAD-LP (minimum absolute deviations, linear programming)',
+  ljz:'LJZ restricted least squares (Lee, Judge & Zellner)',
+  rgls:'Restricted GLS (two-step, Lee, Judge & Zellner)',
+  gme:'Generalised maximum entropy (Golan, Judge & Miller)'
+};
+var METHOD_INFO = {
+  rgls: { badge:'Recommended', short:'Weights out noisy markets and years. Best default.',
+    what:'Two steps: LJZ first, then re-estimates giving less weight to the noisier markets and years, using the covariance that shares follow when they come from sampling. Lee, Judge &amp; Zellner’s preferred estimator.',
+    use:['Your default headline estimator for most share data.','A reasonable number of years (aim for 25 or more).','Tied with MAD-LP as the most accurate in simulation tests.'],
+    avoid:'A market with near-zero share in many years can make the weights unstable. Merge tiny markets into “Others”.' },
+  mad: { badge:'', short:'Robust to unusual years. Best robustness check.',
+    what:'Minimises the sum of absolute prediction errors, solved exactly as a linear programme.',
+    use:['Some years are unusual (drought, export ban, price spike) and should not dominate.','As a robustness check next to Restricted GLS.','Your errors look heavy-tailed (a few very large misses).'],
+    avoid:'Often gives exact 0s and 1s, and more than one matrix can fit equally well. Do not read a 0 as “no switching”.' },
+  ljz: { badge:'', short:'Classic textbook benchmark (least squares).',
+    what:'Minimises squared prediction errors with every probability ≥ 0 and each row summing to 1 (Lee, Judge &amp; Zellner).',
+    use:['You want the textbook estimator, or need to match an older study.','Errors look roughly normal with no extreme years.'],
+    avoid:'Squaring gives big errors extra weight, so one outlier year can pull the whole matrix. Slightly less accurate than Restricted GLS in simulation tests.' },
+  gme: { badge:'', short:'For very short series. Needs a prior.',
+    what:'Chooses the least “informative” matrix that is still consistent with the data (Golan, Judge &amp; Miller). It never gives exact zeros.',
+    use:['Very short series — fewer years than markets — where other methods cannot pin the matrix down.','You have a sound prior belief, such as markets being fairly loyal.'],
+    avoid:'With a uniform prior it pulls every row towards equal probabilities, so retention is understated. It was the least accurate method in simulation tests when years outnumber markets. Results depend on the prior and the error width: report both, and try 2σ and 4σ.' }
+};
+var METHOD_ORDER = ['rgls','mad','ljz','gme'];
+T2.method = 'mad'; T1.method = 'ljz';
+T2.gme = { prior:'uniform', cSigma:3 }; T1.gme = { prior:'uniform', cSigma:3 };
+function methodInfoHTML(k) {
+  var I = METHOD_INFO[k];
+  return '<div class="mtip-h">When to use ' + METHOD_NAME[k] + (I.badge?' <em>'+I.badge+'</em>':'') + '</div>' +
+    '<p>' + I.what + '</p>' +
+    '<div class="mtip-k">Use it when</div><ul>' + I.use.map(function(u){ return '<li>' + u + '</li>'; }).join('') + '</ul>' +
+    '<div class="mtip-k warn">Watch out</div><p>' + I.avoid + '</p>';
+}
+function methodPicker(tool) {
+  var S = tool === 't2' ? T2 : T1, V = tool === 't2' ? 'T2' : 'T1';
+  var cards = METHOD_ORDER.map(function(k){
+    var I = METHOD_INFO[k];
+    return '<label class="mpick' + (S.method===k?' on':'') + '" tabindex="-1">' +
+      '<input type="radio" name="' + tool + '-method" value="' + k + '"' + (S.method===k?' checked':'') +
+      ' onchange="' + V + '.method=this.value;render' + V + 'RunRow()">' +
+      '<b>' + METHOD_NAME[k] + (I.badge?' <i class="mbadge">'+I.badge+'</i>':'') + '</b><span>' + I.short + '</span>' +
+      '<div class="mtip" role="tooltip">' + methodInfoHTML(k) + '</div></label>';
+  }).join('');
+  var g = S.gme, gmeCtl = S.method !== 'gme' ? '' :
+    '<div class="mgme"><label>Prior <select onchange="' + V + '.gme.prior=this.value">' +
+      '<option value="uniform"' + (g.prior==='uniform'?' selected':'') + '>Uniform (pure GME)</option>' +
+      '<option value="loyalty"' + (g.prior==='loyalty'?' selected':'') + '>Loyalty: diagonal 0.5 (GCE)</option></select></label>' +
+    '<label>Error support <select onchange="' + V + '.gme.cSigma=+this.value">' +
+      [2,3,4].map(function(c){ return '<option value="'+c+'"'+(g.cSigma===c?' selected':'')+'>'+c+'σ'+(c===3?' (three-sigma rule)':'')+'</option>'; }).join('') +
+    '</select></label></div>';
+  return '<div class="mpick-cap">Estimation method <span>Hover over a method to see when to use it</span></div>' +
+    '<div class="mpick-wrap">' + cards + '</div>' +
+    '<div class="minfo">' + methodInfoHTML(S.method) + gmeCtl +
+      '<p class="mnote">With fewer than about 25 years, the number of years matters more than the method. Run two methods and compare.</p></div>';
+}
+function methodLabel(res) {
+  var k = (res && res.method) || 'mad', t = METHOD_LONG[k];
+  if (k === 'gme' && res.opts) t += ', ' + (res.opts.prior === 'loyalty' ? 'loyalty prior (diagonal 0.5)' : 'uniform prior') + ', ' + res.opts.cSigma + 'σ error support';
+  return t;
+}
+function fitNote(res) {
+  if (!res || !res.fit) return '';
+  return ' Fit: mean absolute error ' + (res.fit.mad*100).toFixed(2) + ' share-points, RMSE ' + (res.fit.rmse*100).toFixed(2) + ' share-points (' + res.fit.obs + ' observations).';
+}
+
+function renderT2RunRow() {
+  var el = document.getElementById('t2-run-row'); if (!el) return;
+  el.innerHTML = methodPicker('t2') +
+    '<button class="run-btn" onclick="runT2Analysis()" style="margin-bottom:18px;">' +
+      '<svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 2.5L13 8L3 13.5V2.5Z" fill="currentColor"/></svg>' +
+      ' Run ' + METHOD_NAME[T2.method] + ' Analysis' +
+    '</button>';
+}
+
+function renderT1RunRow() {
+  var el = document.getElementById('t1-run-row'); if (!el) return;
+  el.innerHTML = methodPicker('t1') +
+    '<button class="run-btn" onclick="runT1Analysis()" style="margin-bottom:18px;">' +
+      '<svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 2.5L13 8L3 13.5V2.5Z" fill="currentColor"/></svg>' +
+      ' Run ' + METHOD_NAME[T1.method] + ' Analysis' +
+    '</button>';
 }
 
 function steadyState(P, n) {
@@ -978,10 +1411,10 @@ function renderT2Hero() {
     '<div class="hero-left">' +
       '<div class="hero-badge">\ud83d\udce6 Export Market Stability</div>' +
       '<div class="hero-title">Country \u00d7 Country Transition Matrix</div>' +
-      '<div class="hero-subtitle">Upload export data to estimate the probability that export share is retained by or switches between destination markets. Uses MAD-LP method.</div>' +
+      '<div class="hero-subtitle">Upload export data to estimate the probability that export share is retained by or switches between destination markets. Choose MAD-LP, LJZ, Restricted GLS or Maximum Entropy.</div>' +
     '</div>' +
     '<div class="hero-chips">' +
-      '<div class="hero-chip active">MAD-LP Method</div>' +
+      '<div class="hero-chip active">4 estimation methods</div>' +
       '<div class="hero-chip" onclick="showHome()">\u2190 Home</div>' +
       '<div class="hero-chip" onclick="switchTool(\'t1\')">Cropping Pattern \u2192</div>' +
     '</div>' +
@@ -1074,11 +1507,7 @@ function renderT2DataMeta() {
   var el = document.getElementById('t2-meta-area');
   if (el) el.innerHTML = html;
 
-  document.getElementById('t2-run-row').innerHTML =
-    '<button class="run-btn" onclick="runT2Analysis()" style="margin-bottom:18px;">' +
-      '<svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 2.5L13 8L3 13.5V2.5Z" fill="currentColor"/></svg>' +
-      ' Run MAD-LP Analysis' +
-    '</button>';
+  renderT2RunRow();
 }
 
 function renderT2PeriodCard() {
@@ -1192,7 +1621,7 @@ function processT2() {
 
 function runT2Analysis() {
   if (!T2.data.length) { toast('Process data first.', 'warn', '\u26a0'); return; }
-  toast('Running MAD-LP analysis...', 'info', '\u23f3');
+  toast('Running ' + METHOD_NAME[T2.method] + ' analysis...', 'info', '\u23f3');
   setTimeout(function(){
     var filtered;
     if (!T2.colCommodity || T2.commodities.length <= 1) { filtered = T2.data; }
@@ -1216,9 +1645,11 @@ function runT2Analysis() {
     periods.forEach(function(period,pi){
       var pYears = T2.years.filter(function(y){ return y>=period.start&&y<=period.end; });
       if (pYears.length < 2) { T2.results[pi]=null; return; }
-      T2.results[pi] = { P:solveMADLP(T2.countries, shareByYear, pYears), years:pYears, period:period };
+      var o2 = { prior:T2.gme.prior, cSigma:T2.gme.cSigma };
+      var P2 = solveMarkov(T2.method, T2.countries, shareByYear, pYears, o2);
+      T2.results[pi] = { P:P2, years:pYears, period:period, method:T2.method, opts:T2.method==='gme'?o2:null, fit:markovFit(T2.countries, shareByYear, pYears, P2) };
     });
-    toast('MAD-LP analysis complete!', 'success', '\u2713');
+    toast(METHOD_NAME[T2.method] + ' analysis complete!', 'success', '\u2713');
     showT2Results();
   }, 80);
 }
@@ -1232,7 +1663,7 @@ function showT2Results() {
 function renderT2ResultsCard() {
   return '<div class="results-card">' +
     '<div class="results-header">' +
-      '<div class="results-title">MAD-LP Analysis Results \u2014 Export Market Stability</div>' +
+      '<div class="results-title">' + METHOD_NAME[(T2.results[0]&&T2.results[0].method)||T2.method] + ' Analysis Results \u2014 Export Market Stability</div>' +
       '<div class="results-meta">n = ' + (T2.activePeriods&&T2.activePeriods[0]?T2.results[0]&&T2.results[0].years.length:T2.years.length) + ' years &nbsp;|&nbsp; ' + T2.countries.length + ' countries</div>' +
     '</div>' +
     '<div class="res-tabs">' +
@@ -1264,7 +1695,7 @@ function renderT2MatrixPanel() {
       return '<div class="period-tab' + (i===t2ActivePeriod?' active':'') + '" onclick="t2ActivePeriod=' + i + ';document.getElementById(\'pmatrix\').innerHTML=renderT2MatrixPanel();">' + esc(p.label) + ' (' + p.start + '\u2013' + p.end + ')</div>';
     }).join('') +
     '</div>' +
-    (res ? renderMatrixTable(T2.countries, res.P, res.years, res.period, 'Transitional Probability Matrix', 'P<sub>ij</sub> = probability exports shift from country i to country j. Diagonal = retention. Method: MAD-LP.') :
+    (res ? renderMatrixTable(T2.countries, res.P, res.years, res.period, 'Transitional Probability Matrix', 'P<sub>ij</sub> = probability exports shift from country i to country j. Diagonal = retention. Method: ' + methodLabel(res) + '.' + fitNote(res)) :
     '<div class="alert warn"><svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5"/><path d="M8 5v4M8 11v1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>This period has fewer than 2 years \u2014 cannot estimate transition probabilities.</div>') +
     (Object.keys(T2.results).filter(function(k){ return T2.results[k]; }).length > 1 ? renderT2Comparison() : '');
 }
@@ -1422,10 +1853,10 @@ function renderT1Hero() {
     '<div class="hero-left">' +
       '<div class="hero-badge">\ud83c\udf3e Cropping Pattern Dynamics</div>' +
       '<div class="hero-title">Crop \u00d7 Crop Transition Matrix</div>' +
-      '<div class="hero-subtitle">Estimate the probability that area under one crop shifts to another crop across consecutive periods. Uses Lee-Judge-Zellner (LJZ) constrained regression method.</div>' +
+      '<div class="hero-subtitle">Estimate the probability that area under one crop shifts to another crop across consecutive periods. Choose LJZ, Restricted GLS, MAD-LP or Maximum Entropy.</div>' +
     '</div>' +
     '<div class="hero-chips">' +
-      '<div class="hero-chip active">LJZ Method</div>' +
+      '<div class="hero-chip active">4 estimation methods</div>' +
       '<div class="hero-chip" onclick="showHome()">\u2190 Home</div>' +
       '<div class="hero-chip" onclick="switchTool(\'t2\')">Export Market \u2192</div>' +
     '</div>' +
@@ -1517,11 +1948,7 @@ function renderT1DataMeta() {
   var el = document.getElementById('t1-meta-area');
   if (el) el.innerHTML = html;
 
-  document.getElementById('t1-run-row').innerHTML =
-    '<button class="run-btn" onclick="runT1Analysis()" style="margin-bottom:18px;">' +
-      '<svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 2.5L13 8L3 13.5V2.5Z" fill="currentColor"/></svg>' +
-      ' Run LJZ Analysis' +
-    '</button>';
+  renderT1RunRow();
 }
 
 function renderT1PeriodCard() {
@@ -1628,7 +2055,7 @@ function processT1() {
 
 function runT1Analysis() {
   if (!T1.data.length) { toast('Process data first.', 'warn', '\u26a0'); return; }
-  toast('Running LJZ analysis...', 'info', '\u23f3');
+  toast('Running ' + METHOD_NAME[T1.method] + ' analysis...', 'info', '\u23f3');
   setTimeout(function(){
     var filtered;
     if (!T1.colCommodity || T1.commodities.length <= 1) { filtered = T1.data; }
@@ -1652,9 +2079,11 @@ function runT1Analysis() {
     periods.forEach(function(period,pi){
       var pYears=T1.years.filter(function(y){ return y>=period.start&&y<=period.end; });
       if(pYears.length<2){T1.results[pi]=null;return;}
-      T1.results[pi]={P:solveMADLP(T1.entities,shareByYear,pYears),years:pYears,period:period};
+      var o1={prior:T1.gme.prior,cSigma:T1.gme.cSigma};
+      var P1=solveMarkov(T1.method,T1.entities,shareByYear,pYears,o1);
+      T1.results[pi]={P:P1,years:pYears,period:period,method:T1.method,opts:T1.method==='gme'?o1:null,fit:markovFit(T1.entities,shareByYear,pYears,P1)};
     });
-    toast('LJZ analysis complete!', 'success', '\u2713');
+    toast(METHOD_NAME[T1.method] + ' analysis complete!', 'success', '\u2713');
     showT1Results();
   }, 80);
 }
@@ -1668,7 +2097,7 @@ function showT1Results() {
 function renderT1ResultsCard() {
   return '<div class="results-card">' +
     '<div class="results-header">' +
-      '<div class="results-title">LJZ Analysis Results \u2014 Cropping Pattern Dynamics</div>' +
+      '<div class="results-title">' + METHOD_NAME[(T1.results[0]&&T1.results[0].method)||T1.method] + ' Analysis Results \u2014 Cropping Pattern Dynamics</div>' +
       '<div class="results-meta">' + T1.entities.length + ' crops &nbsp;|&nbsp; ' + T1.years.length + ' years</div>' +
     '</div>' +
     '<div class="res-tabs">' +
@@ -1698,7 +2127,7 @@ function renderT1MatrixPanel() {
       return '<div class="period-tab' + (i===t1ActivePeriod?' active':'') + '" onclick="t1ActivePeriod=' + i + ';document.getElementById(\'pt1matrix\').innerHTML=renderT1MatrixPanel();">' + esc(p.label) + ' (' + p.start + '\u2013' + p.end + ')</div>';
     }).join('') +
     '</div>' +
-    (res ? renderMatrixTable(T1.entities, res.P, res.years, res.period, 'Crop Area Transition Probability Matrix', 'P<sub>ij</sub> = probability area under crop i moves to crop j. Diagonal = retention. Method: LJZ.') :
+    (res ? renderMatrixTable(T1.entities, res.P, res.years, res.period, 'Crop Area Transition Probability Matrix', 'P<sub>ij</sub> = probability area under crop i moves to crop j. Diagonal = retention. Method: ' + methodLabel(res) + '.' + fitNote(res)) :
     '<div class="alert warn"><svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5"/><path d="M8 5v4M8 11v1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>Period needs at least 2 years.</div>');
 }
 
@@ -1835,7 +2264,7 @@ function buildAIPrompt(tool) {
   var S = tool === 't2' ? T2 : T1;
   var ap = S.activePeriods || S.periods;
   var entities = tool === 't2' ? T2.countries : T1.entities;
-  var method = tool === 't2' ? 'MAD-LP' : 'LJZ (Lee-Judge-Zellner)';
+  var method = methodLabel((S.results||{})[0] || { method:S.method });
   var context = tool === 't2' ? 'export market stability analysis' : 'cropping pattern dynamics analysis';
   var entityLabel = tool === 't2' ? 'destination country/market' : 'crop/entity';
 
