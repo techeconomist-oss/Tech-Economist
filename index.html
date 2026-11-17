@@ -3,168 +3,853 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Home — Tech Economist</title>
-<meta name="description" content="Free, browser-based analytical tools, data-driven insights, and capacity building for agricultural economics.">
-<link rel="stylesheet" href="style.css">
+<title>Tech Economist — Next Gen Agri Intelligence</title>
+<meta name="description" content="Free, browser-based analytical tools, data sources and training for agricultural economists, students and researchers. By Dr. P. Jagadeshwaran, Coimbatore.">
+<meta name="theme-color" content="#0f2744">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,700&display=swap" rel="stylesheet">
 <style>
-.page-hero{position:relative;overflow:hidden}
-.hero-bg{position:absolute;inset:0;background-image:url('https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=1920&q=80');background-size:cover;background-position:center;opacity:.22;z-index:0}
-.hero-bg-overlay{position:absolute;inset:0;background:linear-gradient(115deg,rgba(11,17,32,.92),rgba(11,17,32,.74) 45%,rgba(29,78,216,.32));z-index:0}
-.page-hero .wrap{position:relative;z-index:2}
-.eco-sec{padding:80px 0;background:var(--w-sec)}
-.eco-wrap{max-width:1000px;margin:0 auto;padding:0 24px;text-align:center}
-.eco-head h2{font-family:var(--serif);font-size:38px;font-weight:400;margin-bottom:8px}
-.eco-head h2 em{color:var(--accent);font-style:italic}
-.eco-head p{font-size:14px;color:var(--slate);max-width:460px;margin:0 auto 36px;line-height:1.7}
-.wedge{transition:opacity .25s;cursor:pointer}.wedge:hover{opacity:.85}
-.tool-modal-bg{position:fixed;inset:0;background:rgba(11,17,32,.55);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;z-index:2000;padding:20px}
-.tool-modal-bg.show{display:flex;animation:tmFade .2s}
-@keyframes tmFade{from{opacity:0}to{opacity:1}}
-.tool-modal{background:#fff;border-radius:22px;max-width:440px;width:100%;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,.3);animation:tmPop .25s cubic-bezier(.34,1.56,.64,1)}
-@keyframes tmPop{from{transform:scale(.9);opacity:0}to{transform:scale(1);opacity:1}}
-.tm-top{padding:26px 28px;color:#fff;position:relative}
-.tm-ab{width:52px;height:52px;border-radius:14px;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;margin-bottom:14px}
-.tm-top h3{font-family:var(--serif);font-size:24px;font-weight:400;line-height:1.2;color:#fff}
-.tm-tag{display:inline-block;font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;background:rgba(255,255,255,.2);padding:3px 10px;border-radius:100px;margin-top:8px}
-.tm-close{position:absolute;top:18px;right:18px;width:30px;height:30px;border:none;border-radius:8px;background:rgba(255,255,255,.2);color:#fff;font-size:15px;cursor:pointer}
-.tm-body{padding:22px 28px 26px}
-.tm-body p{font-size:14px;color:var(--slate);line-height:1.7;margin-bottom:18px}
-.tm-launch{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:13px;border-radius:12px;background:linear-gradient(135deg,var(--accent),#1d4ed8);color:#fff;font-size:14px;font-weight:700;border:none;cursor:pointer;text-decoration:none;transition:all .2s}
-.tm-launch:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(37,99,235,.35)}
+/* ============ te3 design tokens ============ */
+:root{
+  --blue:#2563eb; --blue-d:#1d4ed8; --blue-l:#dbeafe;
+  --navy:#0f2744; --navy-2:#16345a; --ink:#0b1626;
+  --gold:#c8973a; --gold-l:#f3e3c3;
+  --bg:#f6f8fc; --card:#ffffff; --line:#e3e8f1; --muted:#5b6b82;
+  --serif:'Plus Jakarta Sans',system-ui,sans-serif; --sans:'Plus Jakarta Sans',system-ui,sans-serif;
+  --dw:800; --dem:normal; --dls:-.035em; --dsc:.88;
+  --hdr:72px; --r:18px;
+  --shadow:0 1px 2px rgba(15,39,68,.05),0 8px 28px rgba(15,39,68,.08);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;scroll-padding-top:calc(var(--hdr) + 8px)}
+body{font-family:var(--sans);color:var(--ink);background:var(--navy);line-height:1.6;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+a{color:inherit;text-decoration:none}
+img,svg{display:block}
+.wrap{width:min(1180px,92vw);margin:0 auto}
+
+/* ============ 3D canvas (fixed, behind everything) ============ */
+#scene{position:fixed;inset:0;width:100vw;height:100vh;z-index:0;display:block}
+#scene-fallback{position:fixed;inset:0;z-index:0;background:
+  radial-gradient(60% 50% at 70% 30%,rgba(37,99,235,.35),transparent 70%),
+  radial-gradient(40% 40% at 20% 80%,rgba(200,151,58,.18),transparent 70%),var(--navy)}
+main,footer,header{position:relative;z-index:2}
+
+/* ============ Header (fixed) ============ */
+.progress{position:fixed;top:0;left:0;height:3px;width:0;background:linear-gradient(90deg,var(--blue),var(--gold));z-index:60}
+header.top{position:fixed;top:0;left:0;right:0;height:var(--hdr);z-index:50;display:flex;align-items:center;
+  transition:background .35s,box-shadow .35s,height .35s}
+header.top.solid{background:rgba(15,39,68,.82);backdrop-filter:blur(14px) saturate(1.4);-webkit-backdrop-filter:blur(14px) saturate(1.4);box-shadow:0 1px 0 rgba(255,255,255,.06),0 10px 30px rgba(0,0,0,.18)}
+.hdr-in{display:flex;align-items:center;justify-content:space-between;gap:24px}
+.brand{display:flex;align-items:center;gap:12px;color:#fff}
+.brand-mark{width:40px;height:40px;border-radius:11px;display:grid;place-items:center;font-weight:700;font-size:15px;letter-spacing:.5px;
+  background:linear-gradient(135deg,var(--blue),#3b82f6 55%,var(--gold));box-shadow:0 6px 18px rgba(37,99,235,.45);transform:perspective(200px) rotateY(-12deg)}
+.brand-txt b{display:block;font-family:var(--serif);font-weight:400;font-size:22px;line-height:1}
+.brand-txt b,.brand-txt span{white-space:nowrap}
+.brand-txt span{font-size:10.5px;letter-spacing:2.2px;text-transform:uppercase;color:#9fb3d1}
+nav.tabs{position:relative;display:flex;gap:2px;padding:5px;border-radius:999px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1)}
+nav.tabs a{position:relative;z-index:1;padding:8px 16px;font-size:14px;font-weight:500;color:#c9d6ea;border-radius:999px;transition:color .25s;white-space:nowrap}
+nav.tabs a.active{color:#fff}
+nav.tabs .pill{position:absolute;top:5px;bottom:5px;left:0;width:0;border-radius:999px;background:var(--blue);box-shadow:0 4px 14px rgba(37,99,235,.55);transition:transform .45s cubic-bezier(.2,.8,.2,1),width .45s cubic-bezier(.2,.8,.2,1)}
+.hdr-cta{display:flex;gap:10px;align-items:center}
+.btn{white-space:nowrap;display:inline-flex;align-items:center;gap:8px;padding:11px 20px;border-radius:999px;font-weight:600;font-size:14.5px;transition:transform .2s,box-shadow .2s,background .2s;border:1px solid transparent;cursor:pointer;font-family:inherit}
+.btn:hover{transform:translateY(-2px)}
+.btn-blue{background:var(--blue);color:#fff;box-shadow:0 8px 22px rgba(37,99,235,.35)}
+.btn-blue:hover{background:var(--blue-d);box-shadow:0 12px 28px rgba(37,99,235,.45)}
+.btn-gold{background:var(--gold);color:#1b1305}
+.btn-ghost{border-color:rgba(255,255,255,.28);color:#fff}
+.btn-ghost:hover{background:rgba(255,255,255,.08)}
+.btn-line{border-color:var(--line);color:var(--navy);background:#fff}
+.menu-btn{display:none;width:42px;height:42px;border-radius:12px;border:1px solid rgba(255,255,255,.2);background:transparent;color:#fff;cursor:pointer}
+.menu-btn span{display:block;width:18px;height:2px;background:#fff;margin:4px auto;transition:.3s}
+
+/* ============ Sections ============ */
+section{position:relative;padding:110px 0}
+.light{background:rgba(246,248,252,.94);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.white{background:rgba(255,255,255,.96)}
+.dark{color:#fff}
+.eyebrow{display:inline-flex;align-items:center;gap:10px;font-size:12px;font-weight:600;letter-spacing:2.4px;text-transform:uppercase;color:var(--blue)}
+.eyebrow::before{content:"";width:26px;height:2px;background:currentColor;border-radius:2px}
+.dark .eyebrow{color:var(--gold)}
+h1,h2,h3{font-weight:400}
+h2.title{font-family:var(--serif);font-size:clamp(34px,4.4vw,56px);line-height:1.05;letter-spacing:-.5px;margin:14px 0 16px;color:var(--navy)}
+.dark h2.title{color:#fff}
+h2.title em,h1 em{font-style:italic;color:var(--blue)}
+.dark h2.title em,h1 em{color:var(--gold)}
+.lead{font-size:17.5px;color:var(--muted);max-width:640px}
+.dark .lead{color:#b8c7de}
+.sec-head{display:flex;justify-content:space-between;align-items:flex-end;gap:40px;margin-bottom:48px;flex-wrap:wrap}
+
+/* reveal with 3D tilt-in */
+.reveal{opacity:0;transform:perspective(900px) translateY(40px) rotateX(10deg);transition:opacity .9s ease,transform .9s cubic-bezier(.2,.8,.2,1)}
+.reveal.in{opacity:1;transform:none}
+.d1{transition-delay:.08s}.d2{transition-delay:.16s}.d3{transition-delay:.24s}.d4{transition-delay:.32s}
+
+/* ============ Hero ============ */
+#home{min-height:100vh;display:flex;align-items:center;padding:calc(var(--hdr) + 40px) 0 80px;color:#fff}
+.hero-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:60px;align-items:center}
+.tag{display:inline-flex;align-items:center;gap:10px;padding:7px 14px 7px 8px;border-radius:999px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);font-size:13px;color:#d6e2f3}
+.tag i{font-style:normal;padding:3px 10px;border-radius:999px;background:var(--gold);color:#1b1305;font-weight:600;font-size:11.5px;letter-spacing:.5px}
+#home h1{font-family:var(--serif);font-size:clamp(44px,5.6vw,80px);line-height:.98;letter-spacing:-1.5px;margin:26px 0 22px}
+#home h1 .line{display:block;overflow:hidden}
+#home h1 .line span{display:inline-block;transform:translateY(105%);animation:rise 1.1s cubic-bezier(.2,.8,.2,1) forwards}
+#home h1 .line:nth-child(2) span{animation-delay:.12s}
+#home h1 .line:nth-child(3) span{animation-delay:.24s}
+@keyframes rise{to{transform:none}}
+.hero-p{font-size:18.5px;color:#bccbe1;max-width:560px;opacity:0;animation:fade 1s .5s forwards}
+.hero-actions{display:flex;gap:14px;margin-top:34px;flex-wrap:wrap;opacity:0;animation:fade 1s .7s forwards}
+@keyframes fade{to{opacity:1}}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:0;margin-top:56px;border-top:1px solid rgba(255,255,255,.12);opacity:0;animation:fade 1s .9s forwards}
+.stats div{padding:20px 0 0}
+.stats b{display:block;font-family:var(--serif);font-weight:400;font-size:40px;line-height:1}
+.stats b em{font-style:normal;color:var(--gold)}
+.stats span{font-size:12.5px;color:#93a7c6;letter-spacing:.4px}
+.stats b span{font-size:inherit;color:inherit;letter-spacing:0}
+/* 3D glass panel on hero right */
+.hero-card{perspective:1200px;opacity:0;animation:fade 1.2s .6s forwards}
+.glass{transform-style:preserve-3d;transform:rotateY(-14deg) rotateX(8deg);transition:transform .2s ease-out;border-radius:22px;padding:26px;
+  background:linear-gradient(160deg,rgba(255,255,255,.13),rgba(255,255,255,.04));border:1px solid rgba(255,255,255,.18);
+  backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);box-shadow:0 40px 80px rgba(0,0,0,.35)}
+.glass-top{display:flex;align-items:center;gap:7px;margin-bottom:18px}
+.glass-top i{width:10px;height:10px;border-radius:50%;background:#ff5f57}.glass-top i:nth-child(2){background:#febc2e}.glass-top i:nth-child(3){background:#28c840}
+.glass-top span{margin-left:auto;font-size:12px;color:#a9bbd6;font-family:ui-monospace,monospace}
+.glass h4{font-weight:500;font-size:14px;color:#c8d6eb;margin-bottom:12px;transform:translateZ(30px)}
+.bars{display:flex;align-items:flex-end;gap:9px;height:150px;padding:10px 0;border-bottom:1px dashed rgba(255,255,255,.18);transform:translateZ(50px)}
+.bars i{flex:1;border-radius:6px 6px 2px 2px;background:linear-gradient(180deg,#60a5fa,var(--blue));transform-origin:bottom;animation:grow 1.6s cubic-bezier(.2,.8,.2,1) both}
+.bars i:nth-child(odd){background:linear-gradient(180deg,#e6bd6a,var(--gold))}
+@keyframes grow{from{transform:scaleY(0)}}
+.glass-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px;transform:translateZ(40px)}
+.glass-row div{background:rgba(15,39,68,.55);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:12px 14px}
+.glass-row small{display:block;font-size:11px;color:#93a7c6;letter-spacing:.5px}
+.glass-row b{font-family:var(--serif);font-weight:400;font-size:26px}
+.glass-ai{margin-top:12px;font-size:13px;color:#d6e2f3;background:rgba(37,99,235,.25);border:1px solid rgba(96,165,250,.35);border-radius:12px;padding:10px 14px;transform:translateZ(60px)}
+.glass-ai b{color:var(--gold)}
+.scroll-hint{position:absolute;left:50%;bottom:26px;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:8px;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#8aa0c2}
+.scroll-hint i{width:22px;height:34px;border:1.5px solid #8aa0c2;border-radius:12px;position:relative}
+.scroll-hint i::after{content:"";position:absolute;left:50%;top:7px;width:3px;height:7px;margin-left:-1.5px;border-radius:2px;background:var(--gold);animation:wheel 1.8s infinite}
+@keyframes wheel{0%{opacity:0;transform:translateY(-3px)}40%{opacity:1}100%{opacity:0;transform:translateY(10px)}}
+
+/* ============ Why ============ */
+.why-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
+.why{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:30px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+.why .n{font-family:var(--serif);font-size:58px;line-height:1;color:var(--blue-l);position:absolute;right:20px;top:12px}
+.why h3{font-family:var(--serif);font-size:27px;color:var(--navy);margin:16px 0 8px}
+.why p{color:var(--muted);font-size:15.5px}
+.why.ok{background:var(--navy);color:#fff;border-color:var(--navy)}
+.why.ok h3{color:#fff}.why.ok p{color:#b8c7de}.why.ok .n{color:rgba(200,151,58,.3)}
+.ico{width:46px;height:46px;border-radius:12px;display:grid;place-items:center;background:var(--blue-l);color:var(--blue)}
+.why.ok .ico{background:rgba(200,151,58,.18);color:var(--gold)}
+
+/* ============ Tools ============ */
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:30px}
+.filters button{font-family:inherit;font-size:14px;font-weight:500;padding:9px 18px;border-radius:999px;border:1px solid var(--line);background:#fff;color:var(--navy);cursor:pointer;transition:.25s}
+.filters button:hover{border-color:var(--blue);color:var(--blue)}
+.filters button.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+.filters button sup{font-size:10px;opacity:.6;margin-left:3px}
+.tool-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;perspective:1400px}
+.tool{position:relative;display:flex;flex-direction:column;background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:26px;box-shadow:var(--shadow);
+  transform-style:preserve-3d;transition:transform .25s ease-out,box-shadow .3s,border-color .3s,opacity .4s;will-change:transform}
+.tool:hover{box-shadow:0 30px 60px rgba(15,39,68,.16);border-color:#bfd3fb}
+.tool::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:radial-gradient(400px circle at var(--mx,50%) var(--my,0%),rgba(37,99,235,.09),transparent 45%);opacity:0;transition:opacity .3s}
+.tool:hover::before{opacity:1}
+.tool.hide{display:none}
+.t-top{display:flex;align-items:center;justify-content:space-between;transform:translateZ(30px)}
+.t-badge{width:52px;height:52px;border-radius:14px;display:grid;place-items:center;font-weight:700;font-size:15px;color:#fff;background:linear-gradient(135deg,var(--navy),var(--blue));box-shadow:0 10px 22px rgba(37,99,235,.25)}
+.tool[data-cat="sustain"] .t-badge{background:linear-gradient(135deg,#7a5a1d,var(--gold))}
+.t-cat{font-size:11.5px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;padding:5px 11px;border-radius:999px;background:var(--blue-l);color:var(--blue-d)}
+.tool h3{font-family:var(--serif);font-size:26px;line-height:1.1;color:var(--navy);margin:20px 0 8px;transform:translateZ(24px)}
+.tool p{font-size:14.8px;color:var(--muted);flex:1;transform:translateZ(14px)}
+.t-meta{display:flex;flex-wrap:wrap;gap:6px;margin:16px 0 18px}
+.t-meta span{font-size:11.5px;color:var(--navy);background:var(--bg);border:1px solid var(--line);padding:3px 9px;border-radius:7px}
+.t-go{display:flex;align-items:center;justify-content:space-between;padding-top:16px;border-top:1px solid var(--line);font-weight:600;font-size:14.5px;color:var(--blue);transform:translateZ(20px)}
+.t-go .arr{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:var(--blue-l);transition:.3s}
+.tool:hover .t-go .arr{background:var(--blue);color:#fff;transform:rotate(-45deg)}
+.soon .t-go{color:#94a3b8}
+.soon .t-go .arr{background:#f1f5f9}
+.soon-chip{font-size:11px;font-weight:600;color:#8a6420;background:var(--gold-l);padding:4px 10px;border-radius:999px}
+.privacy{margin-top:34px;display:flex;align-items:center;gap:14px;padding:16px 22px;border-radius:14px;background:#fff;border:1px dashed #c7d6f4;color:var(--navy);font-size:14.5px}
+.privacy b{color:var(--blue)}
+
+/* ============ How it works (dark band, 3D shows through) ============ */
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:10px;counter-reset:s}
+.step{padding:30px;border-radius:var(--r);background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);position:relative}
+.step::before{counter-increment:s;content:"0" counter(s);font-family:var(--serif);font-size:64px;line-height:1;color:var(--gold);opacity:.9}
+.step h3{font-family:var(--serif);font-size:28px;margin:10px 0 6px}
+.step p{color:#b8c7de;font-size:15px}
+.step:not(:last-child)::after{content:"";position:absolute;top:56px;right:-24px;width:24px;height:2px;background:linear-gradient(90deg,var(--gold),transparent)}
+.audience{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:70px}
+.aud{padding:22px;border-radius:16px;border:1px solid rgba(255,255,255,.12);background:rgba(15,39,68,.5)}
+.aud b{display:block;font-family:var(--serif);font-weight:400;font-size:24px;color:#fff}
+.aud span{font-size:14px;color:#a9bbd6}
+
+/* ============ Data ============ */
+.data-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.src{display:flex;flex-direction:column;gap:6px;padding:20px;border-radius:16px;background:#fff;border:1px solid var(--line);transition:.3s;box-shadow:0 1px 2px rgba(15,39,68,.04)}
+.src:hover{transform:translateY(-4px);border-color:var(--blue);box-shadow:var(--shadow)}
+.src small{font-size:11px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--gold)}
+.src b{font-size:16.5px;color:var(--navy);font-weight:600}
+.src span{font-size:13.5px;color:var(--muted)}
+.src em{font-style:normal;font-size:13px;color:var(--blue);margin-top:auto;padding-top:6px}
+
+/* ============ Learn ============ */
+.learn{display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:center}
+.pills{display:flex;flex-wrap:wrap;gap:8px;margin:26px 0 30px}
+.pills span{font-size:13.5px;padding:7px 14px;border-radius:999px;background:#fff;border:1px solid var(--line);color:var(--navy)}
+.yt{perspective:1200px}
+.yt-card{position:relative;aspect-ratio:16/10;border-radius:22px;overflow:hidden;transform:rotateY(-10deg) rotateX(4deg);transition:transform .4s;
+  background:radial-gradient(70% 70% at 30% 30%,#1e4fbf,transparent 60%),radial-gradient(60% 60% at 80% 80%,rgba(200,151,58,.55),transparent 60%),var(--navy);box-shadow:0 40px 80px rgba(15,39,68,.3)}
+.yt:hover .yt-card{transform:none}
+.yt-card .grid-bg{position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.06) 1px,transparent 1px);background-size:34px 34px}
+.yt-card h4{position:absolute;left:28px;top:26px;font-family:var(--serif);font-weight:400;font-size:34px;color:#fff;line-height:1.05;max-width:70%}
+.yt-card h4 em{color:var(--gold)}
+.play{position:absolute;left:50%;top:55%;width:78px;height:78px;margin:-39px 0 0 -39px;border-radius:50%;background:#fff;display:grid;place-items:center;box-shadow:0 0 0 12px rgba(255,255,255,.12);transition:.3s}
+.play:hover{transform:scale(1.08)}
+.yt-meta{position:absolute;left:28px;bottom:22px;right:28px;display:flex;justify-content:space-between;font-size:13px;color:#c8d6eb}
+
+/* ============ About ============ */
+.about{display:grid;grid-template-columns:.8fr 1.2fr;gap:60px;align-items:center}
+.portrait{aspect-ratio:4/5;border-radius:24px;position:relative;overflow:hidden;background:linear-gradient(160deg,var(--navy),var(--navy-2) 60%,#1e4fbf);display:grid;place-items:center;box-shadow:var(--shadow)}
+.portrait .mono{font-family:var(--serif);font-size:140px;color:rgba(255,255,255,.92);line-height:1}
+.portrait .mono em{color:var(--gold)}
+.portrait .cap{position:absolute;left:20px;right:20px;bottom:20px;padding:14px 16px;border-radius:14px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);backdrop-filter:blur(8px);color:#fff}
+.portrait .cap b{display:block;font-weight:600}
+.portrait .cap span{font-size:13px;color:#c8d6eb}
+.about p{color:var(--muted);font-size:16.5px;margin-bottom:14px}
+.ticks{list-style:none;display:grid;grid-template-columns:1fr 1fr;gap:10px 22px;margin-top:22px}
+.ticks li{display:flex;gap:10px;font-size:14.8px;color:var(--navy)}
+.ticks li::before{content:"";flex:0 0 18px;height:18px;margin-top:3px;border-radius:50%;background:var(--blue) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.5'%3E%3Cpath d='M5 12l5 5L20 7'/%3E%3C/svg%3E") center/11px no-repeat}
+
+/* ============ Contact / CTA ============ */
+.cta{border-radius:28px;padding:64px;background:linear-gradient(135deg,rgba(15,39,68,.92),rgba(29,78,216,.85));border:1px solid rgba(255,255,255,.15);color:#fff;display:grid;grid-template-columns:1.2fr 1fr;gap:50px;align-items:center;box-shadow:0 40px 90px rgba(0,0,0,.35);backdrop-filter:blur(10px)}
+.cta h2{font-family:var(--serif);font-size:clamp(34px,4vw,52px);line-height:1.05}
+.cta h2 em{color:var(--gold)}
+.cta p{color:#c8d6eb;margin-top:12px}
+.contact-list{display:grid;gap:12px}
+.contact-list a{display:flex;align-items:center;gap:14px;padding:14px 18px;border-radius:14px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);transition:.25s}
+.contact-list a:hover{background:rgba(255,255,255,.16);transform:translateX(4px)}
+.contact-list small{display:block;font-size:11.5px;color:#a9bbd6;letter-spacing:.6px;text-transform:uppercase}
+.contact-list b{font-weight:500}
+
+/* ============ Footer ============ */
+footer{background:#081626;color:#a9bbd6}
+.news{border-bottom:1px solid rgba(255,255,255,.08)}
+.news-in{display:flex;align-items:center;gap:24px;padding:26px 0;flex-wrap:wrap}
+.news-in .lbl{display:flex;align-items:center;gap:10px;color:#fff;font-weight:500}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--gold);box-shadow:0 0 0 0 rgba(200,151,58,.6);animation:pulse 2s infinite}
+@keyframes pulse{70%{box-shadow:0 0 0 10px rgba(200,151,58,0)}100%{box-shadow:0 0 0 0 rgba(200,151,58,0)}}
+.news form{display:flex;gap:8px;flex:1;max-width:520px;margin-left:auto}
+.news input{flex:1;min-width:0;padding:12px 18px;border-radius:999px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.06);color:#fff;font-family:inherit;font-size:14.5px;outline:none}
+.news input:focus{border-color:var(--gold)}
+.news .msg{font-size:13px;width:100%;text-align:right}
+.foot{display:grid;grid-template-columns:1.6fr 1fr 1fr 1fr;gap:40px;padding:56px 0 40px}
+.foot h5{font-size:12px;letter-spacing:2px;text-transform:uppercase;color:#fff;font-weight:600;margin-bottom:16px}
+.foot a:not(.brand){display:block;font-size:14.5px;padding:4px 0;transition:color .2s}
+.foot a:hover{color:var(--gold)}
+.foot p{font-size:14.5px;max-width:320px;margin-top:14px}
+.social{display:flex;gap:10px;margin-top:20px}
+.social a{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;border:1px solid rgba(255,255,255,.14);padding:0}
+.social a:hover{background:var(--blue);border-color:var(--blue);color:#fff}
+.legal{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;padding:22px 0;border-top:1px solid rgba(255,255,255,.08);font-size:13px}
+.to-top{position:fixed;right:22px;bottom:22px;z-index:40;width:46px;height:46px;border-radius:50%;background:var(--blue);color:#fff;display:grid;place-items:center;box-shadow:0 10px 24px rgba(37,99,235,.45);opacity:0;transform:translateY(20px);transition:.35s;pointer-events:none}
+.to-top.show{opacity:1;transform:none;pointer-events:auto}
+
+/* ============ Responsive ============ */
+
+/* ============ Display type (catchy headline font) ============ */
+.brand-txt b,h2.title,#home h1,.stats b,.glass-row b,.why .n,.why h3,.tool h3,.step::before,.step h3,.aud b,.yt-card h4,.portrait .mono,.cta h2{font-weight:var(--dw);letter-spacing:var(--dls)}
+h2.title em,#home h1 em,.cta h2 em,.yt-card h4 em,.portrait .mono em{font-style:var(--dem)}
+#home h1{font-size:calc(clamp(44px,5.6vw,80px)*var(--dsc));line-height:1.02}
+h2.title{font-size:calc(clamp(34px,4.4vw,56px)*var(--dsc));line-height:1.08}
+.cta h2{font-size:calc(clamp(34px,4vw,52px)*var(--dsc))}
+.why h3,.tool h3,.step h3{font-size:calc(27px*var(--dsc));line-height:1.15}
+.brand-txt b{font-size:calc(22px*var(--dsc))}
+.stats b{font-size:calc(40px*var(--dsc))}
+.portrait .mono{font-size:calc(140px*var(--dsc))}
+.yt-card h4{font-size:calc(34px*var(--dsc))}
+/* gold underline sweep on headline accent words */
+#home h1 em,h2.title em{background:linear-gradient(transparent 78%,rgba(200,151,58,.28) 78%);padding:0 .06em}
+
+@media (max-width:1080px){
+  nav.tabs a{padding:8px 11px;font-size:13.5px}
+  .hdr-cta .btn-ghost{display:none}
+  .tool-grid{grid-template-columns:repeat(2,1fr)}
+  .data-grid{grid-template-columns:repeat(3,1fr)}
+}
+@media (max-width:900px){
+  :root{--hdr:64px}
+  .menu-btn{display:block}
+  .hdr-cta{display:none}
+  nav.tabs{position:fixed;top:var(--hdr);left:12px;right:12px;flex-direction:column;border-radius:18px;padding:10px;background:rgba(15,39,68,.97);
+    transform:translateY(-12px);opacity:0;pointer-events:none;transition:.3s}
+  nav.tabs.open{transform:none;opacity:1;pointer-events:auto}
+  nav.tabs a{padding:13px 16px;font-size:16px}
+  nav.tabs a.active{background:var(--blue)}
+  nav.tabs .pill{display:none}
+  header.top{background:rgba(15,39,68,.85);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+  .hero-grid,.learn,.about,.cta{grid-template-columns:1fr}
+  .hero-card{display:none}
+  .why-grid,.steps{grid-template-columns:1fr}
+  .step:not(:last-child)::after{display:none}
+  .audience{grid-template-columns:1fr 1fr}
+  .data-grid{grid-template-columns:1fr 1fr}
+  .foot{grid-template-columns:1fr 1fr}
+  .cta{padding:38px 26px}
+  section{padding:80px 0}
+  .ticks{grid-template-columns:1fr}
+  .scroll-hint{display:none}
+}
+@media (hover:none){.tool,.tool *{transform:none!important}}
+@media (max-width:600px){
+  .tool-grid,.data-grid{grid-template-columns:1fr}
+  .stats{grid-template-columns:1fr 1fr}
+  .news form{max-width:none;margin:0;width:100%}
+  .foot{grid-template-columns:1fr}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation:none!important;transition:none!important}
+  .reveal{opacity:1;transform:none}
+  #home h1 .line span{transform:none}
+  .hero-p,.hero-actions,.stats,.hero-card{opacity:1}
+}
 </style>
 </head>
 <body>
 
-<header class="header" id="hdr"><div class="wrap"><div class="header-inner">
-<a href="index.html" class="logo"><div class="logo-gem"><span>TE</span></div><div><h1>Tech Economist</h1><small>Economics &middot; Data &middot; Technology &middot; Research</small></div></a>
-<button class="nav-toggle" id="navToggle"><span></span><span></span><span></span></button>
-<nav id="mainNav"><a href="index.html" class="active">Home</a><a href="blog.html">Blog</a><a href="find-data.html">Find Data</a><a href="analytical-tools.html">Tools</a><a href="learn-with-us.html">Learn</a><a href="about.html">About</a><a href="careers.html">Careers</a></nav>
-</div></div></header>
+<div id="scene-fallback"></div>
+<canvas id="scene" aria-hidden="true"></canvas>
+<div class="progress" id="progress"></div>
 
-<!-- HERO -->
-<section class="page-hero">
-<div class="hero-bg"></div><div class="hero-bg-overlay"></div>
-<div class="wrap">
-<div class="hero-grid">
-<div class="hero-text">
-<div class="hero-overline">Open Access Research Platform</div>
-<h2>Where <em>Economics</em><br>Meets Agricultural<br>Intelligence</h2>
-<p>Free, browser-based analytical tools for agricultural economists, researchers, and farming communities. No installation. No paywall.</p>
-<div class="hero-actions">
-<a href="analytical-tools.html" class="btn btn-accent">Explore Tools →</a>
-<a href="find-data.html" class="btn btn-clay">Find Data Sources</a>
-</div>
-</div>
-<div class="hero-stats">
-<div class="glass reveal-pop"><h3>Free</h3><span>Open Access</span></div>
-<div class="glass reveal-pop"><h3>15+</h3><span>Data Sources</span></div>
-<div class="glass reveal-pop"><h3>AI</h3><span>Powered Analysis</span></div>
-<div class="glass reveal-pop"><h3>Q1</h3><span>Journal Targets</span></div>
-</div>
-</div>
-</div>
+<!-- ================= HEADER (fixed) ================= -->
+<header class="top" id="hdr">
+  <div class="wrap hdr-in">
+    <a href="#home" class="brand" aria-label="Tech Economist home">
+      <div class="brand-mark">TE</div>
+      <div class="brand-txt"><b>Tech Economist</b><span>Next Gen Agri Intelligence</span></div>
+    </a>
+    <nav class="tabs" id="tabs" aria-label="Sections">
+      <span class="pill" id="pill"></span>
+      <a href="#home" class="active">Home</a>
+      <a href="#tools">Tools</a>
+      <a href="#how">How it works</a>
+      <a href="#data">Find Data</a>
+      <a href="#learn">Learn</a>
+      <a href="#about">About</a>
+      <a href="#contact">Contact</a>
+    </nav>
+    <div class="hdr-cta">
+      <a class="btn btn-ghost" href="https://www.youtube.com/@techeconomist6919" target="_blank" rel="noopener">YouTube ↗</a>
+      <a class="btn btn-blue" href="#tools">Explore Tools</a>
+    </div>
+    <button class="menu-btn" id="menuBtn" aria-label="Open menu"><span></span><span></span><span></span></button>
+  </div>
+</header>
+
+<main>
+<!-- ================= HOME ================= -->
+<section id="home" data-tab>
+  <div class="wrap hero-grid">
+    <div>
+      <div class="tag"><i>FREE</i> Browser-based · No install · Your data never leaves your device</div>
+      <h1>
+        <span class="line"><span>Where <em>Economics</em></span></span>
+        <span class="line"><span>Meets Agricultural</span></span>
+        <span class="line"><span>Intelligence</span></span>
+      </h1>
+      <p class="hero-p">Free analytical tools, curated data sources and practical training for agricultural economists, students, researchers and farming communities.</p>
+      <div class="hero-actions">
+        <a class="btn btn-blue" href="#tools">Explore Tools →</a>
+        <a class="btn btn-ghost" href="#data">Find Data Sources</a>
+      </div>
+      <div class="stats">
+        <div><b class="count" data-to="12">0</b><span>Research tools</span></div>
+        <div><b><span class="count" data-to="15">0</span><em>+</em></b><span>Data sources</span></div>
+        <div><b><span class="count" data-to="80">0</span><em>+</em></b><span>Video lessons</span></div>
+        <div><b>₹<em>0</em></b><span>Always free</span></div>
+      </div>
+    </div>
+    <div class="hero-card">
+      <div class="glass" id="glass">
+        <div class="glass-top"><i></i><i></i><i></i><span>rca-analyser · live</span></div>
+        <h4>Balassa RCA index — Indian spice exports</h4>
+        <div class="bars">
+          <i style="height:42%"></i><i style="height:58%;animation-delay:.1s"></i><i style="height:51%;animation-delay:.2s"></i><i style="height:74%;animation-delay:.3s"></i><i style="height:66%;animation-delay:.4s"></i><i style="height:88%;animation-delay:.5s"></i><i style="height:80%;animation-delay:.6s"></i><i style="height:96%;animation-delay:.7s"></i>
+        </div>
+        <div class="glass-row">
+          <div><small>RCA (latest)</small><b>3.42</b></div>
+          <div><small>Stability (Markov)</small><b>0.81</b></div>
+        </div>
+        <div class="glass-ai"><b>AI insight ·</b> Strong, rising comparative advantage — retention probability above 0.8.</div>
+      </div>
+    </div>
+  </div>
+  <a href="#why" class="scroll-hint" aria-label="Scroll down"><i></i>Scroll</a>
 </section>
 
-<!-- WHY -->
-<section class="section">
-<div class="wrap">
-<div class="sec-head" style="text-align:center">
-<div class="sec-overline accent" style="justify-content:center">The Problem</div>
-<h2 class="sec-title">Why These Tools Exist</h2>
-<p class="sec-desc" style="margin:0 auto">Advanced agricultural economics analysis has long been locked behind barriers. Tech Economist removes them.</p>
-</div>
-<div class="why-grid">
-<div class="why-card reveal-pop"><div class="why-tag">Problem</div><div class="why-icon">💸</div><h3>Expensive Software</h3><p>Proprietary statistical packages cost thousands per licence — out of reach for most students and independent researchers.</p></div>
-<div class="why-card reveal-pop"><div class="why-tag">Problem</div><div class="why-icon">⚙️</div><h3>Complex Installation</h3><p>Institutional tools like R-Shiny servers need setup, dependencies, and technical know-how before any analysis begins.</p></div>
-<div class="why-card sol reveal-pop"><div class="why-tag">Solution</div><div class="why-icon">✨</div><h3>Free &amp; Instant</h3><p>Every Tech Economist tool runs entirely in your browser. No cost, no install, no data leaves your device. Just open and analyse.</p></div>
-</div>
-</div>
+<!-- ================= WHY ================= -->
+<section id="why" class="light" data-tab="home">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="reveal">
+        <div class="eyebrow">Why these tools exist</div>
+        <h2 class="title">Research shouldn't need<br><em>expensive software</em></h2>
+      </div>
+      <p class="lead reveal d1">Students and early researchers know the theory but get stuck at the data and the software. Tech Economist removes that barrier.</p>
+    </div>
+    <div class="why-grid">
+      <div class="why reveal d1"><span class="n">01</span>
+        <div class="ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M15 9.5c-.6-1-1.7-1.5-3-1.5-1.7 0-3 .9-3 2s1.3 1.7 3 2 3 .9 3 2-1.3 2-3 2c-1.3 0-2.4-.5-3-1.5M12 6v12"/></svg></div>
+        <h3>Expensive software</h3><p>Commercial statistics and trade-analysis packages cost more than most students and small institutions can afford.</p></div>
+      <div class="why reveal d2"><span class="n">02</span>
+        <div class="ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v3h16v-3"/></svg></div>
+        <h3>Complex installation</h3><p>Licences, dependencies and admin rights stop analysis before it starts, especially on shared lab computers.</p></div>
+      <div class="why ok reveal d3"><span class="n">03</span>
+        <div class="ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg></div>
+        <h3>Free &amp; instant</h3><p>Open a link and run the analysis in your browser. No install, no sign-up, and your data stays on your device.</p></div>
+    </div>
+  </div>
 </section>
 
-<!-- TOOLKIT WHEEL (single tool showcase) -->
-<section class="eco-sec">
-<div class="eco-wrap">
-<div class="sec-overline accent reveal-blur" style="justify-content:center">The Toolkit</div>
-<div class="eco-head reveal-blur">
-<h2>One <em>Research Suite</em>, Seven Tools</h2>
-<p>A connected ecosystem of browser-based analytical tools. Click any segment to explore the tool and launch it.</p>
-</div>
-<div class="reveal-pop">
-<svg viewBox="0 0 600 600" width="100%" style="max-width:540px;display:block;margin:0 auto" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="g0" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#1d4ed8"/><stop offset="100%" stop-color="#3b82f6"/></linearGradient><linearGradient id="g1" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#0ea5e9"/><stop offset="100%" stop-color="#38bdf8"/></linearGradient><linearGradient id="g2" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#0891b2"/><stop offset="100%" stop-color="#06b6d4"/></linearGradient><linearGradient id="g3" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#0d9488"/><stop offset="100%" stop-color="#14b8a6"/></linearGradient><linearGradient id="g4" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#2563eb"/><stop offset="100%" stop-color="#60a5fa"/></linearGradient><linearGradient id="g5" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#4f46e5"/><stop offset="100%" stop-color="#6366f1"/></linearGradient><linearGradient id="g6" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#1e40af"/><stop offset="100%" stop-color="#3b82f6"/></linearGradient><filter id="sh" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="3" stdDeviation="6" flood-color="#1e3a8a" flood-opacity="0.18"/></filter></defs><path d="M 305.2 70.1 A 230 230 0 0 1 476.5 152.6 L 372.9 239.1 A 95 95 0 0 0 302.1 205.0 Z" fill="url(#g0)" stroke="#fff" stroke-width="3" class="wedge" onclick="openTool(0)"><title>Markov Chain Trade Analyser</title></path><circle cx="370.3" cy="154.0" r="26" fill="#fff" filter="url(#sh)" style="pointer-events:none"/><text x="370.3" y="154.0" text-anchor="middle" dominant-baseline="central" font-family="Outfit,sans-serif" font-size="15" font-weight="700" fill="#1d4ed8" style="pointer-events:none">MC</text><path d="M 483.0 160.7 A 230 230 0 0 1 525.3 346.1 L 393.1 319.1 A 95 95 0 0 0 375.6 242.5 Z" fill="url(#g1)" stroke="#fff" stroke-width="3" class="wedge" onclick="openTool(1)"><title>RCA Analyser</title></path><circle cx="457.9" cy="264.0" r="26" fill="#fff" filter="url(#sh)" style="pointer-events:none"/><text x="457.9" y="264.0" text-anchor="middle" dominant-baseline="central" font-family="Outfit,sans-serif" font-size="15" font-weight="700" fill="#0ea5e9" style="pointer-events:none">RC</text><path d="M 523.0 356.2 A 230 230 0 0 1 404.4 504.9 L 343.1 384.6 A 95 95 0 0 0 392.1 323.2 Z" fill="url(#g2)" stroke="#fff" stroke-width="3" class="wedge" onclick="openTool(2)"><title>Citation Manager</title></path><circle cx="426.7" cy="401.0" r="26" fill="#fff" filter="url(#sh)" style="pointer-events:none"/><text x="426.7" y="401.0" text-anchor="middle" dominant-baseline="central" font-family="Outfit,sans-serif" font-size="15" font-weight="700" fill="#0891b2" style="pointer-events:none">CM</text><path d="M 395.1 509.4 A 230 230 0 0 1 204.9 509.4 L 260.7 386.5 A 95 95 0 0 0 339.3 386.5 Z" fill="url(#g3)" stroke="#fff" stroke-width="3" class="wedge" onclick="openTool(3)"><title>AgRes Suite</title></path><circle cx="300.0" cy="462.0" r="26" fill="#fff" filter="url(#sh)" style="pointer-events:none"/><text x="300.0" y="462.0" text-anchor="middle" dominant-baseline="central" font-family="Outfit,sans-serif" font-size="15" font-weight="700" fill="#0d9488" style="pointer-events:none">AG</text><path d="M 195.6 504.9 A 230 230 0 0 1 77.0 356.2 L 207.9 323.2 A 95 95 0 0 0 256.9 384.6 Z" fill="url(#g4)" stroke="#fff" stroke-width="3" class="wedge" onclick="openTool(4)"><title>PAM Analyser</title></path><circle cx="173.3" cy="401.0" r="26" fill="#fff" filter="url(#sh)" style="pointer-events:none"/><text x="173.3" y="401.0" text-anchor="middle" dominant-baseline="central" font-family="Outfit,sans-serif" font-size="15" font-weight="700" fill="#2563eb" style="pointer-events:none">PA</text><path d="M 74.7 346.1 A 230 230 0 0 1 117.0 160.7 L 224.4 242.5 A 95 95 0 0 0 206.9 319.1 Z" fill="url(#g5)" stroke="#fff" stroke-width="3" class="wedge" onclick="openTool(5)"><title>LDV Regression Tool</title></path><circle cx="142.1" cy="264.0" r="26" fill="#fff" filter="url(#sh)" style="pointer-events:none"/><text x="142.1" y="264.0" text-anchor="middle" dominant-baseline="central" font-family="Outfit,sans-serif" font-size="15" font-weight="700" fill="#4f46e5" style="pointer-events:none">LR</text><path d="M 123.5 152.6 A 230 230 0 0 1 294.8 70.1 L 297.9 205.0 A 95 95 0 0 0 227.1 239.1 Z" fill="url(#g6)" stroke="#fff" stroke-width="3" class="wedge" onclick="openTool(6)"><title>WatDIMP</title></path><circle cx="229.7" cy="154.0" r="26" fill="#fff" filter="url(#sh)" style="pointer-events:none"/><text x="229.7" y="154.0" text-anchor="middle" dominant-baseline="central" font-family="Outfit,sans-serif" font-size="15" font-weight="700" fill="#1e40af" style="pointer-events:none">WD</text><circle cx="300" cy="300" r="87" fill="#fff" filter="url(#sh)"/><circle cx="300" cy="300" r="87" fill="none" stroke="#dbeafe" stroke-width="6"/><text x="300" y="292" text-anchor="middle" font-family="Instrument Serif,serif" font-size="26" fill="#2563eb">AgRes</text><text x="300" y="314" text-anchor="middle" font-family="Outfit,sans-serif" font-size="9" letter-spacing="2" fill="#94a3b8" font-weight="600">RESEARCH SUITE</text></svg>
-</div>
-</div>
+<!-- ================= TOOLS ================= -->
+<section id="tools" class="white" data-tab>
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="reveal">
+        <div class="eyebrow">The research suite</div>
+        <h2 class="title">Built for <em>agricultural</em> economists</h2>
+      </div>
+      <p class="lead reveal d1">Each tool follows a published method, runs in the browser, and gives AI-assisted interpretation you can cite and check.</p>
+    </div>
+    <div class="filters reveal" id="filters"></div>
+    <div class="tool-grid" id="toolGrid"></div>
+    <div class="privacy reveal">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 018 0v3"/></svg>
+      <span><b>Privacy by design.</b> Tools run locally in your browser. No install, and your data is not sent to our servers.</span>
+    </div>
+  </div>
 </section>
 
-<!-- HOW IT WORKS -->
-<section class="section how-sec">
-<div class="wrap">
-<div class="sec-head" style="text-align:center">
-<div class="sec-overline accent" style="justify-content:center;color:#60a5fa">The Workflow</div>
-<h2 class="sec-title" style="color:#fff">How It Works</h2>
-<p class="sec-desc" style="margin:0 auto;color:rgba(255,255,255,.6)">Three steps from raw data to publication-ready results — all in your browser.</p>
-</div>
-<div class="how-grid">
-<div class="how-step reveal-pop"><div class="how-num">01</div><h3>Upload Your Data</h3><p>Drop in a CSV or Excel file. Your data is processed locally and never transmitted to any server.</p></div>
-<div class="how-step reveal-pop"><div class="how-num">02</div><h3>Run the Analysis</h3><p>Select your model or design, map columns, and compute. Full statistical output appears instantly.</p></div>
-<div class="how-step reveal-pop"><div class="how-num">03</div><h3>Get AI Interpretation</h3><p>Receive a plain-language, thesis-ready interpretation of your results, plus charts and CSV export.</p></div>
-</div>
-</div>
+<!-- ================= HOW IT WORKS (dark, 3D shows through) ================= -->
+<section id="how" class="dark" data-tab>
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="reveal">
+        <div class="eyebrow">How it works</div>
+        <h2 class="title">From raw data to <em>publishable</em> insight</h2>
+      </div>
+      <p class="lead reveal d1">Three steps, one browser tab. Designed for theses, journal papers and policy reports.</p>
+    </div>
+    <div class="steps">
+      <div class="step reveal d1"><h3>Upload your data</h3><p>Paste or upload Excel/CSV, or start from a built-in sample dataset to learn the method.</p></div>
+      <div class="step reveal d2"><h3>Run the analysis</h3><p>Estimation follows the standard published method: Balassa RCA, MAD-LP Markov chains, PAM, Logit/Probit/Tobit and more.</p></div>
+      <div class="step reveal d3"><h3>Get AI interpretation</h3><p>Read a plain-language interpretation, then export tables and charts ready for your manuscript.</p></div>
+    </div>
+    <div class="audience">
+      <div class="aud reveal d1"><b>Students</b><span>UG, PG and PhD theses</span></div>
+      <div class="aud reveal d2"><b>Researchers</b><span>Q1 journal-grade methods</span></div>
+      <div class="aud reveal d3"><b>Faculty</b><span>Teaching and lab practicals</span></div>
+      <div class="aud reveal d4"><b>FPOs &amp; NGOs</b><span>Impact and field evidence</span></div>
+    </div>
+  </div>
 </section>
 
-<!-- WHO IT'S FOR -->
-<section class="section">
-<div class="wrap">
-<div class="sec-head" style="text-align:center">
-<div class="sec-overline accent" style="justify-content:center">The Audience</div>
-<h2 class="sec-title">Who It's For</h2>
-<p class="sec-desc" style="margin:0 auto">Built for everyone working with agricultural and economic data.</p>
-</div>
-<div class="who-grid">
-<div class="who-photo reveal-pop"><img src="who-students.jpg" alt="Students" onerror="this.style.display='none'"><div class="who-cap"><h3>Students</h3><p>MSc &amp; PhD scholars running thesis analysis</p></div></div>
-<div class="who-photo reveal-pop"><img src="who-researchers.jpg" alt="Researchers" onerror="this.style.display='none'"><div class="who-cap"><h3>Researchers</h3><p>Applied economists &amp; agricultural scientists</p></div></div>
-<div class="who-photo reveal-pop"><img src="who-faculty.jpg" alt="Faculty" onerror="this.style.display='none'"><div class="who-cap"><h3>Faculty</h3><p>Teaching econometrics &amp; experimental design</p></div></div>
-<div class="who-photo reveal-pop"><img src="who-farmers.jpg" alt="Farming communities" onerror="this.style.display='none'"><div class="who-cap"><h3>FPOs &amp; NGOs</h3><p>Data-driven decisions for farming communities</p></div></div>
-</div>
-</div>
+<!-- ================= FIND DATA ================= -->
+<section id="data" class="light" data-tab>
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="reveal">
+        <div class="eyebrow">Find data</div>
+        <h2 class="title">Trusted sources, <em>one place</em></h2>
+      </div>
+      <p class="lead reveal d1">Curated Indian and international databases for agriculture, trade, prices and climate, with what each one is best for.</p>
+    </div>
+    <div class="data-grid" id="dataGrid"></div>
+  </div>
 </section>
 
-<!-- CTA -->
-<section class="sec-dark">
-<div class="wrap" style="text-align:center;padding:64px 0">
-<div class="sec-overline accent" style="justify-content:center;color:#60a5fa">Get Started</div>
-<h2 class="sec-title" style="color:#fff">Access the Full<br>Intelligence Suite</h2>
-<p class="sec-desc" style="margin:0 auto 28px;color:rgba(255,255,255,.6)">All tools, data sources, and learning materials are freely accessible. No login required.</p>
-<div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
-<a href="analytical-tools.html" class="btn btn-accent">Explore Tools →</a>
-<a href="about.html" class="btn btn-clay">Contact</a>
-</div>
-</div>
+<!-- ================= LEARN ================= -->
+<section id="learn" class="white" data-tab>
+  <div class="wrap learn">
+    <div class="reveal">
+      <div class="eyebrow">Learn with us</div>
+      <h2 class="title">The economics of <em>technology</em>, explained visually</h2>
+      <p class="lead">Video case studies on the Indian economy, AI tools for research, Excel and data analysis, and step-by-step method tutorials that use real agricultural data.</p>
+      <div class="pills">
+        <span>AI for Research</span><span>Excel &amp; Data Analysis</span><span>RCA &amp; Trade</span><span>Markov Chains</span><span>Econometrics</span><span>LCA &amp; Carbon</span><span>Indian Economy</span><span>Bibliometrics</span>
+      </div>
+      <a class="btn btn-blue" href="https://www.youtube.com/@techeconomist6919" target="_blank" rel="noopener">Visit the channel ↗</a>
+    </div>
+    <div class="yt reveal d2">
+      <div class="yt-card">
+        <div class="grid-bg"></div>
+        <h4>Tech <em>Economist</em> on YouTube</h4>
+        <a class="play" href="https://www.youtube.com/@techeconomist6919" target="_blank" rel="noopener" aria-label="Open YouTube channel">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="#0f2744"><path d="M8 5v14l11-7z"/></svg>
+        </a>
+        <div class="yt-meta"><span>80+ videos</span><span>Educate · Analyse · Inspire</span></div>
+      </div>
+    </div>
+  </div>
 </section>
 
-<footer class="footer"><div class="wrap">
-<div class="footer-grid">
-<div class="footer-brand"><h3>Tech Economist</h3><p>Making secondary data systems, economic analysis, and technology-driven research accessible and meaningful.</p>
-<div class="footer-social"><a href="https://www.youtube.com/@techeconomist6919" target="_blank">YT</a><a href="https://www.instagram.com/techeconomist" target="_blank">IG</a><a href="https://www.linkedin.com/in/jagadeshwaran-p-299a51121/" target="_blank">in</a></div></div>
-<div class="footer-col"><h4>Platform</h4><a href="analytical-tools.html">Tools</a><a href="find-data.html">Find Data</a><a href="learn-with-us.html">Learn</a><a href="blog.html">Blog</a></div>
-<div class="footer-col"><h4>Research</h4><a href="about.html">About</a><a href="careers.html">Careers</a><a href="https://www.linkedin.com/in/jagadeshwaran-p-299a51121/" target="_blank">LinkedIn</a></div>
-<div class="footer-col"><h4>Connect</h4><a href="mailto:jagadeshtnau@gmail.com">Email</a><a href="https://www.youtube.com/@techeconomist6919" target="_blank">YouTube</a></div>
-</div>
-<div class="footer-bottom"><span>&copy; 2026 Tech Economist &middot; Dr. P. Jagadeshwaran</span><span>Coimbatore, Tamil Nadu</span></div>
-</div></footer>
+<!-- ================= ABOUT ================= -->
+<section id="about" class="light" data-tab>
+  <div class="wrap about">
+    <div class="portrait reveal">
+      <div class="mono">T<em>E</em></div>
+      <div class="cap"><b>Dr. P. Jagadeshwaran</b><span>Agricultural Economist · Assistant Professor · Coimbatore</span></div>
+    </div>
+    <div class="reveal d1">
+      <div class="eyebrow">About</div>
+      <h2 class="title">Bridging theory and <em>practice</em></h2>
+      <p>Tech Economist makes secondary data systems, economic analysis and technology-driven research accessible and meaningful. Datasets are scattered, methods are often applied mechanically, and interpretation suffers. We organise the data, connect it with economic reasoning, and build free tools that do the heavy lifting.</p>
+      <p>The platform is rooted in Tamil Nadu and built for agricultural research across India and beyond.</p>
+      <ul class="ticks">
+        <li>Methods from peer-reviewed literature</li>
+        <li>Indian context: DES, APEDA, MOSPI</li>
+        <li>From UG classrooms to PhD research</li>
+        <li>AI-assisted, human-verified</li>
+      </ul>
+    </div>
+  </div>
+</section>
 
-<div class="tool-modal-bg" id="toolModalBg" onclick="if(event.target===this)closeToolModal()">
-<div class="tool-modal">
-<div class="tm-top" id="tmTop"><button class="tm-close" onclick="closeToolModal()">✕</button><div class="tm-ab" id="tmAb"></div><h3 id="tmName"></h3><span class="tm-tag" id="tmTag"></span></div>
-<div class="tm-body"><p id="tmDesc"></p><a class="tm-launch" id="tmLaunch" href="#">Launch Tool →</a></div>
-</div>
-</div>
+<!-- ================= CONTACT ================= -->
+<section id="contact" class="dark" data-tab>
+  <div class="wrap">
+    <div class="cta reveal">
+      <div>
+        <div class="eyebrow">Get in touch</div>
+        <h2 style="margin-top:14px">Need a custom tool or <em>training?</em></h2>
+        <p>For workshops, collaborations, tool requests or research consultancy, write in or connect on social media.</p>
+        <div style="display:flex;gap:12px;margin-top:26px;flex-wrap:wrap">
+          <a class="btn btn-gold" href="mailto:jagadeshtnau@gmail.com">Email us</a>
+          <a class="btn btn-ghost" href="#tools">Browse tools</a>
+        </div>
+      </div>
+      <div class="contact-list">
+        <a href="mailto:jagadeshtnau@gmail.com"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#c8973a" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg><div><small>Email</small><b>jagadeshtnau@gmail.com</b></div></a>
+        <a href="https://www.youtube.com/@techeconomist6919" target="_blank" rel="noopener"><svg width="20" height="20" viewBox="0 0 24 24" fill="#c8973a"><path d="M23 7.2a3 3 0 00-2.1-2.1C19 4.6 12 4.6 12 4.6s-7 0-8.9.5A3 3 0 001 7.2 31 31 0 00.5 12a31 31 0 00.5 4.8 3 3 0 002.1 2.1c1.9.5 8.9.5 8.9.5s7 0 8.9-.5a3 3 0 002.1-2.1 31 31 0 00.5-4.8 31 31 0 00-.5-4.8zM9.8 15.1V8.9l5.7 3.1z"/></svg><div><small>YouTube</small><b>@techeconomist6919</b></div></a>
+        <a href="https://www.linkedin.com/in/jagadeshwaran-p-299a51121/" target="_blank" rel="noopener"><svg width="20" height="20" viewBox="0 0 24 24" fill="#c8973a"><path d="M4.98 3.5a2.5 2.5 0 11-.02 5 2.5 2.5 0 01.02-5zM3 9h4v12H3zM9 9h3.8v1.7h.1c.5-1 1.8-2 3.8-2 4 0 4.8 2.6 4.8 6V21h-4v-5.6c0-1.3 0-3-1.9-3s-2.1 1.4-2.1 2.9V21H9z"/></svg><div><small>LinkedIn</small><b>Dr. P. Jagadeshwaran</b></div></a>
+      </div>
+    </div>
+  </div>
+</section>
+</main>
 
-<script src="main.js"></script>
+<!-- ================= FOOTER ================= -->
+<footer>
+  <div class="news">
+    <div class="wrap news-in">
+      <div class="lbl"><span class="dot"></span> Get new tools &amp; tutorials in your inbox</div>
+      <form id="newsForm" novalidate>
+        <input type="email" id="newsEmail" placeholder="your@email.com" aria-label="Email address" required>
+        <button class="btn btn-gold" type="submit">Subscribe</button>
+      </form>
+      <div class="msg" id="newsMsg" aria-live="polite"></div>
+    </div>
+  </div>
+  <div class="wrap foot">
+    <div>
+      <a href="#home" class="brand" style="padding:0"><div class="brand-mark">TE</div><div class="brand-txt"><b>Tech Economist</b><span>Next Gen Agri Intelligence</span></div></a>
+      <p>Making secondary data systems, economic analysis and technology-driven research accessible and meaningful.</p>
+      <div class="social">
+        <a href="https://www.youtube.com/@techeconomist6919" target="_blank" rel="noopener" aria-label="YouTube"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M23 7.2a3 3 0 00-2.1-2.1C19 4.6 12 4.6 12 4.6s-7 0-8.9.5A3 3 0 001 7.2 31 31 0 00.5 12a31 31 0 00.5 4.8 3 3 0 002.1 2.1c1.9.5 8.9.5 8.9.5s7 0 8.9-.5a3 3 0 002.1-2.1 31 31 0 00.5-4.8 31 31 0 00-.5-4.8zM9.8 15.1V8.9l5.7 3.1z"/></svg></a>
+        <a href="https://www.instagram.com/techeconomist" target="_blank" rel="noopener" aria-label="Instagram"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor"/></svg></a>
+        <a href="https://www.linkedin.com/in/jagadeshwaran-p-299a51121/" target="_blank" rel="noopener" aria-label="LinkedIn"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M4.98 3.5a2.5 2.5 0 11-.02 5 2.5 2.5 0 01.02-5zM3 9h4v12H3zM9 9h3.8v1.7h.1c.5-1 1.8-2 3.8-2 4 0 4.8 2.6 4.8 6V21h-4v-5.6c0-1.3 0-3-1.9-3s-2.1 1.4-2.1 2.9V21H9z"/></svg></a>
+        <a href="mailto:jagadeshtnau@gmail.com" aria-label="Email"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg></a>
+      </div>
+    </div>
+    <div><h5>Platform</h5><a href="#tools">Tools</a><a href="#data">Find Data</a><a href="#learn">Learn</a><a href="blog.html">Blog</a></div>
+    <div><h5>Research</h5><a href="#about">About</a><a href="careers.html">Careers</a><a href="#how">How it works</a></div>
+    <div><h5>Connect</h5><a href="#contact">Contact</a><a href="mailto:jagadeshtnau@gmail.com">Email</a><a href="https://www.youtube.com/@techeconomist6919" target="_blank" rel="noopener">YouTube</a></div>
+  </div>
+  <div class="wrap legal">
+    <span>© <span id="yr">2026</span> Tech Economist · Dr. P. Jagadeshwaran, Coimbatore, Tamil Nadu</span>
+    <span>Economics · Data · Technology · Research</span>
+  </div>
+</footer>
+
+<a href="#home" class="to-top" id="toTop" aria-label="Back to top"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 19V5M5 12l7-7 7 7"/></svg></a>
+
 <script>
-var WHEEL_TOOLS=[{"ab": "MC", "name": "Markov Chain Trade Analyser", "sub": "Trade Dynamics", "desc": "Export market stability and cropping pattern dynamics via MAD-LP and LJZ methods.", "tag": "Econometrics", "file": "markov.html", "c1": "#1d4ed8", "c2": "#3b82f6"}, {"ab": "RC", "name": "RCA Analyser", "sub": "Comparative Advantage", "desc": "Balassa Revealed Comparative Advantage index with multi-year heatmaps and AI interpretation.", "tag": "Trade Analysis", "file": "rca.html", "c1": "#0ea5e9", "c2": "#38bdf8"}, {"ab": "CM", "name": "Citation Manager", "sub": "Bibliometrics", "desc": "OpenAlex and CrossRef lookup with 6 citation styles (APA, MLA, Chicago, Harvard, Vancouver, IEEE).", "tag": "Reference", "file": "citation.html", "c1": "#0891b2", "c2": "#06b6d4"}, {"ab": "AG", "name": "AgRes Suite", "sub": "Field Trials", "desc": "CRD, RBD and LSD experimental design analysis with ANOVA, DMRT groupings and AI interpretation.", "tag": "Experimental Design", "file": "agres.html", "c1": "#0d9488", "c2": "#14b8a6"}, {"ab": "PA", "name": "PAM Analyser", "sub": "Policy Matrix", "desc": "Policy Analysis Matrix (Monke & Pearson) \u2014 competitiveness, DRC, NPCO, sensitivity analysis.", "tag": "Trade Policy", "file": "pam.html", "c1": "#2563eb", "c2": "#60a5fa"}, {"ab": "LR", "name": "LDV Regression Tool", "sub": "Econometrics", "desc": "Logit, Probit and Tobit models with marginal effects, diagnostics and predictions.", "tag": "Econometrics", "file": "regression.html", "c1": "#4f46e5", "c2": "#6366f1"}, {"ab": "WD", "name": "WatDIMP", "sub": "Impact Assessment", "desc": "Watershed Development Impact Measurement using Double Difference methodology across 16 modules.", "tag": "Impact Assessment", "file": "watdimp.html", "c1": "#1e40af", "c2": "#3b82f6"}];
-function openTool(i){var t=WHEEL_TOOLS[i];document.getElementById('tmTop').style.background='linear-gradient(135deg,'+t.c1+','+t.c2+')';document.getElementById('tmAb').textContent=t.ab;document.getElementById('tmName').textContent=t.name;document.getElementById('tmTag').textContent=t.tag;document.getElementById('tmDesc').textContent=t.desc;document.getElementById('tmLaunch').href=t.file;document.getElementById('toolModalBg').classList.add('show');}
-function closeToolModal(){document.getElementById('toolModalBg').classList.remove('show');}
-document.addEventListener('keydown',function(e){if(e.key==='Escape')closeToolModal();});
+/* ============================================================
+   EDIT HERE — tool list. Paste each tool's live URL into `url`.
+   Leave url '' to show "Link coming"; set soon:true for "Coming soon".
+   ============================================================ */
+const TOOLS = [
+  {abbr:'MC',  name:'Markov Chain Trade Analyser', cat:'trade', label:'Trade Analysis',
+   desc:'Export market stability and cropping-pattern dynamics using MAD-LP and LJZ methods, with steady-state projection and period comparison.',
+   tags:['MAD-LP','Steady state','AI'], url:'https://script.google.com/macros/s/AKfycbzjpL5xwKDulbqVug6E8Fw5g0y3raHRrhGVWURIuftpEvUcmKQSy5De1js3weEzVV6n/exec'},
+  {abbr:'RCA', name:'RCA Analyser', cat:'trade', label:'Trade Analysis',
+   desc:'Balassa revealed comparative advantage for one or many commodities, with heatmaps, trend charts, Excel I/O and AI chat.',
+   tags:['Balassa','Heatmaps','Excel'], url:'https://script.google.com/macros/s/AKfycbxH7b4XTm3-CeFRAlQDqVzndMMGyqc6HZQ6wS5vR1EyTS8TCZ28V5U6yCBaA7Sz79m_TQ/exec'},
+  {abbr:'PAM', name:'PAM Analyser', cat:'trade', label:'Trade Policy',
+   desc:'Policy Analysis Matrix after Monke & Pearson (1989): competitiveness, distortions, DRC, NPCO and sensitivity analysis.',
+   tags:['DRC','NPC / EPC','Sensitivity'], url:''},
+  {abbr:'LDV', name:'LDV Regression Tool', cat:'econ', label:'Econometrics',
+   desc:'Logit, Probit, Tobit and IV/2SLS models with marginal effects, diagnostics, predictions and AI interpretation.',
+   tags:['Logit','Tobit','2SLS'], url:''},
+  {abbr:'PF',  name:'Price Forecasting Tool', cat:'econ', label:'Econometrics',
+   desc:'Forecast agricultural commodity prices from time-series data, with model comparison and forecast charts.',
+   tags:['Time series','Forecasts'], url:''},
+  {abbr:'GL',  name:'GrowthLab', cat:'econ', label:'Growth Analysis',
+   desc:'Compound annual growth rates and Cuddy-Della Valle instability index for area, production and yield series.',
+   tags:['CAGR','Instability'], url:''},
+  {abbr:'AR',  name:'AgRes Suite', cat:'design', label:'Experimental Design',
+   desc:'CRD, RBD, LSD and factorial designs with ANOVA, critical difference and DMRT groupings, after Rangaswamy (1995).',
+   tags:['ANOVA','DMRT','CD'], url:'', soon:true},
+  {abbr:'WD',  name:'WatDIMP', cat:'impact', label:'Impact Assessment',
+   desc:'Watershed impact assessment with Double Difference methodology across 16 household, farm and environmental modules.',
+   tags:['Double difference','16 modules'], url:''},
+  {abbr:'SL',  name:'SurveyLab', cat:'research', label:'Data Collection',
+   desc:'Survey platform with conditional logic, an AI assistant, and backup and restore for field data collection.',
+   tags:['Forms','Logic','Backup'], url:'https://script.google.com/macros/s/AKfycbz1bRUxS9jm_3VA3E4c3nMR08R7vIZUR-ZWYYUCUEYUwRGIcg2nCZExYxjgs2w0XXP0/exec'},
+  {abbr:'CM',  name:'Citation Manager', cat:'research', label:'Research Tools',
+   desc:'Turn pasted DOIs or references into formatted citations in six styles, using OpenAlex and Crossref.',
+   tags:['APA','6 styles','DOI'], url:'https://script.google.com/macros/s/AKfycbwAHeBiSXjqMd_IB1XDEK3j85ufPBEpomRAivg0X7m5lHsbsQmI8thCRIh8UmZW7gXy/exec'},
+  {abbr:'BM',  name:'BibMerge', cat:'research', label:'Research Tools',
+   desc:'Merge Web of Science, Scopus and PubMed exports into one Bibliometrix-ready dataset with de-duplication.',
+   tags:['WoS','Scopus','Bibliometrix'], url:''},
+  {abbr:'GHG', name:'Agri Emissions Platform', cat:'sustain', label:'Sustainability',
+   desc:'Emission-intensity scoring and scenario modelling for agriculture, following the IFPRI Patra & Babu (2017) method.',
+   tags:['GHG','Scenarios'], url:''},
+  {abbr:'CC',  name:'CarbonCalc India', cat:'sustain', label:'Carbon Accounting',
+   desc:'India-specific agricultural LCA and GHG calculator calibrated to IPCC Tier 2 emission factors.',
+   tags:['LCA','IPCC Tier 2'], url:'', soon:true},
+];
+const CATS = [['all','All'],['trade','Trade'],['econ','Econometrics'],['design','Experimental'],['impact','Impact'],['research','Research'],['sustain','Sustainability']];
+
+const SOURCES = [
+  ['India','DES — Agriculture Statistics','Area, production, yield, cost of cultivation','https://desagri.gov.in'],
+  ['India','MOSPI','National accounts, NSS surveys, price indices','https://www.mospi.gov.in'],
+  ['India','APEDA AgriExchange','Agri-export data by product and country','https://agriexchange.apeda.gov.in'],
+  ['India','Agmarknet','Daily mandi arrivals and prices','https://agmarknet.gov.in'],
+  ['India','RBI DBIE','Macro, credit and price time series','https://data.rbi.org.in'],
+  ['India','ICRISAT District Level Data','Long-run district panel for agriculture','http://data.icrisat.org/dld/'],
+  ['India','Open Government Data','Ministry datasets in open formats','https://data.gov.in'],
+  ['India','IMD Data','Rainfall and temperature records','https://mausam.imd.gov.in'],
+  ['Global','FAOSTAT','Production, trade, emissions and land use','https://www.fao.org/faostat'],
+  ['Global','UN Comtrade','Bilateral trade by HS code','https://comtradeplus.un.org'],
+  ['Global','World Bank WDI','Development indicators for all countries','https://databank.worldbank.org'],
+  ['Global','USDA PSD Online','Production, supply and distribution balances','https://apps.fas.usda.gov/psdonline'],
+];
+
+/* ---------- Newsletter (Google Form backend) ---------- */
+const FORM_ID = '1FAIpQLSdyKbx5RAICyIW1vB_-98iCWU-pN4ZisaQnp3Ng3e0FmBs8GQ';
+const ENTRY_ID = 'entry.1446390747';
+</script>
+
+<script>
+/* ---------- Render tools ---------- */
+const grid = document.getElementById('toolGrid'), fil = document.getElementById('filters');
+const arrow = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M13 5l7 7-7 7"/></svg>';
+grid.innerHTML = TOOLS.map((t,i)=>{
+  const live = t.url && !t.soon;
+  const tag = live ? `a href="${t.url}" target="_blank" rel="noopener"` : 'div';
+  const end = live ? 'a' : 'div';
+  const go = t.soon ? '<span>Coming soon</span>' : (live ? '<span>Launch tool</span>' : '<span>Link coming</span>');
+  return `<${tag} class="tool reveal ${live?'':'soon'}" data-cat="${t.cat}" style="transition-delay:${(i%3)*.08}s">
+    <div class="t-top"><div class="t-badge">${t.abbr}</div>${t.soon?'<span class="soon-chip">Coming soon</span>':`<span class="t-cat">${t.label}</span>`}</div>
+    <h3>${t.name}</h3><p>${t.desc}</p>
+    <div class="t-meta">${t.tags.map(x=>`<span>${x}</span>`).join('')}</div>
+    <div class="t-go">${go}<span class="arr">${arrow}</span></div></${end}>`;
+}).join('');
+fil.innerHTML = CATS.map(([k,l],i)=>{
+  const n = k==='all'?TOOLS.length:TOOLS.filter(t=>t.cat===k).length;
+  return `<button data-k="${k}" class="${i?'':'on'}">${l}<sup>${n}</sup></button>`;
+}).join('');
+fil.addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(!b) return;
+  fil.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));
+  grid.querySelectorAll('.tool').forEach(c=>{
+    const show = b.dataset.k==='all'||c.dataset.cat===b.dataset.k;
+    c.classList.toggle('hide',!show); if(show){c.classList.add('in')}
+  });
+});
+
+/* ---------- Render data sources ---------- */
+document.getElementById('dataGrid').innerHTML = SOURCES.map((s,i)=>
+  `<a class="src reveal" style="transition-delay:${(i%4)*.06}s" href="${s[3]}" target="_blank" rel="noopener"><small>${s[0]}</small><b>${s[1]}</b><span>${s[2]}</span><em>Open source ↗</em></a>`).join('');
+
+/* ---------- 3D tilt on tool cards + hero glass ---------- */
+const fine = matchMedia('(hover:hover) and (pointer:fine)').matches;
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+if(fine && !reduce){
+  grid.addEventListener('pointermove',e=>{
+    const c=e.target.closest('.tool'); if(!c) return;
+    const r=c.getBoundingClientRect(), x=(e.clientX-r.left)/r.width, y=(e.clientY-r.top)/r.height;
+    c.style.transform=`rotateX(${(.5-y)*10}deg) rotateY(${(x-.5)*12}deg) translateZ(6px)`;
+    c.style.setProperty('--mx',x*100+'%'); c.style.setProperty('--my',y*100+'%');
+  });
+  grid.addEventListener('pointerout',e=>{const c=e.target.closest('.tool'); if(c && !c.contains(e.relatedTarget)) c.style.transform='';});
+  const g=document.getElementById('glass');
+  document.getElementById('home').addEventListener('pointermove',e=>{
+    const x=e.clientX/innerWidth-.5, y=e.clientY/innerHeight-.5;
+    g.style.transform=`rotateY(${-14+x*16}deg) rotateX(${8-y*12}deg)`;
+  });
+}
+
+/* ---------- Reveal on scroll ---------- */
+const io = new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}}),{threshold:.12,rootMargin:'0px 0px -40px 0px'});
+document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+
+/* ---------- Count-up stats ---------- */
+document.querySelectorAll('.count').forEach(el=>{
+  const to=+el.dataset.to, t0=performance.now()+900;
+  const step=t=>{const p=Math.min(1,Math.max(0,(t-t0)/1400)); el.textContent=Math.round(to*(1-Math.pow(1-p,3))); if(p<1) requestAnimationFrame(step)};
+  requestAnimationFrame(step);
+});
+
+/* ---------- Header, tabs (scrollspy), progress ---------- */
+const hdr=document.getElementById('hdr'), tabs=document.getElementById('tabs'), pill=document.getElementById('pill');
+const links=[...tabs.querySelectorAll('a')], prog=document.getElementById('progress'), toTop=document.getElementById('toTop');
+const sections=[...document.querySelectorAll('[data-tab]')];
+function movePill(a){ if(!a) return; pill.style.width=a.offsetWidth+'px'; pill.style.transform=`translateX(${a.offsetLeft}px)`; }
+function setActive(id){
+  links.forEach(a=>{const on=a.getAttribute('href')==='#'+id; a.classList.toggle('active',on); if(on) movePill(a);});
+}
+let current='home';
+function onScroll(){
+  const y=scrollY, h=document.documentElement.scrollHeight-innerHeight;
+  hdr.classList.toggle('solid',y>40);
+  prog.style.width=(h>0?y/h*100:0)+'%';
+  toTop.classList.toggle('show',y>innerHeight*.8);
+  const mid=y+innerHeight*.35; let id='home';
+  for(const s of sections){ if(s.offsetTop<=mid) id=s.dataset.tab||s.id; }
+  if(id!==current){current=id; setActive(id); history.replaceState(null,'','#'+id);}
+  window.__scrollP = h>0?y/h:0;
+}
+addEventListener('scroll',onScroll,{passive:true});
+addEventListener('resize',()=>movePill(tabs.querySelector('a.active')));
+document.fonts && document.fonts.ready.then(()=>movePill(tabs.querySelector('a.active')));
+setTimeout(()=>{movePill(tabs.querySelector('a.active'));onScroll()},60);
+
+/* mobile menu */
+const mb=document.getElementById('menuBtn');
+mb.addEventListener('click',()=>tabs.classList.toggle('open'));
+links.forEach(a=>a.addEventListener('click',()=>tabs.classList.remove('open')));
+
+/* ---------- Newsletter ---------- */
+const nf=document.getElementById('newsForm'), ne=document.getElementById('newsEmail'), nm=document.getElementById('newsMsg');
+nf.addEventListener('submit',e=>{
+  e.preventDefault();
+  const v=ne.value.trim();
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)){nm.style.color='#fca5a5';nm.textContent='Please enter a valid email address.';return;}
+  const body=new URLSearchParams(); body.append(ENTRY_ID,v);
+  fetch(`https://docs.google.com/forms/d/e/${FORM_ID}/formResponse`,{method:'POST',mode:'no-cors',body})
+    .finally(()=>{nm.style.color='#86efac';nm.textContent="You're subscribed. Thank you!";ne.value='';});
+});
+document.getElementById('yr').textContent=new Date().getFullYear();
+</script>
+
+<!-- ============ 3D scene: Three.js (CDN) ============ -->
+<script type="module">
+const canvas=document.getElementById('scene');
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+let THREE;
+try{ THREE = await import('https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js'); }
+catch(e){ canvas.style.display='none'; }
+if(THREE){
+try{
+  const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true,powerPreference:'high-performance'});
+  renderer.setPixelRatio(Math.min(devicePixelRatio,1.8));
+  renderer.setSize(innerWidth,innerHeight);
+  document.getElementById('scene-fallback').style.background='#0f2744';
+  const scene=new THREE.Scene();
+  scene.fog=new THREE.FogExp2(0x0f2744,0.055);
+  const cam=new THREE.PerspectiveCamera(55,innerWidth/innerHeight,0.1,200);
+  cam.position.set(0,3.2,9);
+
+  // 1) Field terrain: rolling farmland of points + wireframe (data landscape)
+  const W=60,D=60,SEG=110;
+  const tGeo=new THREE.PlaneGeometry(W,D,SEG,SEG); tGeo.rotateX(-Math.PI/2);
+  const base=tGeo.attributes.position.array.slice();
+  const colors=new Float32Array(tGeo.attributes.position.count*3);
+  tGeo.setAttribute('color',new THREE.BufferAttribute(colors,3));
+  const blue=new THREE.Color(0x2563eb), gold=new THREE.Color(0xc8973a), lb=new THREE.Color(0x93c5fd);
+  const pts=new THREE.Points(tGeo,new THREE.PointsMaterial({size:0.07,vertexColors:true,transparent:true,opacity:.95,sizeAttenuation:true}));
+  const wire=new THREE.LineSegments(new THREE.WireframeGeometry(tGeo),new THREE.LineBasicMaterial({color:0x2563eb,transparent:true,opacity:.07}));
+  const field=new THREE.Group(); field.add(pts); field.position.y=-1.6; scene.add(field);
+
+  // 2) Floating 3D bar chart (crop yields) in the distance
+  const bars=new THREE.Group();
+  const barMatB=new THREE.MeshStandardMaterial({color:0x2563eb,metalness:.3,roughness:.35,emissive:0x0b2a7a,emissiveIntensity:.5});
+  const barMatG=new THREE.MeshStandardMaterial({color:0xc8973a,metalness:.4,roughness:.3,emissive:0x4a3410,emissiveIntensity:.5});
+  const barList=[];
+  for(let i=0;i<7;i++){
+    const h=0.6+Math.random()*2.2;
+    const m=new THREE.Mesh(new THREE.BoxGeometry(.42,1,.42),i%2?barMatG:barMatB);
+    m.scale.y=h; m.position.set((i-3)*.62,h/2,0); m.userData={h,ph:Math.random()*6};
+    bars.add(m); barList.push(m);
+  }
+  bars.position.set(4.6,-.2,-2.5); bars.rotation.y=-.5; scene.add(bars);
+
+  // 3) Globe of trade nodes with arcs
+  const globe=new THREE.Group();
+  const gR=1.35;
+  globe.add(new THREE.Mesh(new THREE.IcosahedronGeometry(gR,3),new THREE.MeshBasicMaterial({color:0x60a5fa,wireframe:true,transparent:true,opacity:.18})));
+  globe.add(new THREE.Mesh(new THREE.SphereGeometry(gR*.97,32,32),new THREE.MeshBasicMaterial({color:0x0f2744,transparent:true,opacity:.6})));
+  const nodes=[];
+  for(let i=0;i<26;i++){
+    const v=new THREE.Vector3().randomDirection().multiplyScalar(gR);
+    const n=new THREE.Mesh(new THREE.SphereGeometry(.035,8,8),new THREE.MeshBasicMaterial({color:i%3?0x93c5fd:0xe6bd6a}));
+    n.position.copy(v); globe.add(n); nodes.push(v);
+  }
+  for(let i=0;i<14;i++){
+    const a=nodes[(Math.random()*nodes.length)|0], b=nodes[(Math.random()*nodes.length)|0];
+    const mid=a.clone().add(b).multiplyScalar(.5).normalize().multiplyScalar(gR*1.55);
+    const curve=new THREE.QuadraticBezierCurve3(a,mid,b);
+    globe.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(curve.getPoints(40)),new THREE.LineBasicMaterial({color:i%2?0xc8973a:0x60a5fa,transparent:true,opacity:.7})));
+  }
+  globe.position.set(-4.4,1.6,-3); scene.add(globe);
+
+  // 4) Drifting particles (dust / pollen)
+  const pN=600, pGeo=new THREE.BufferGeometry(), pPos=new Float32Array(pN*3);
+  for(let i=0;i<pN;i++){pPos[i*3]=(Math.random()-.5)*40;pPos[i*3+1]=Math.random()*14-2;pPos[i*3+2]=(Math.random()-.5)*40;}
+  pGeo.setAttribute('position',new THREE.BufferAttribute(pPos,3));
+  const dust=new THREE.Points(pGeo,new THREE.PointsMaterial({color:0xe6bd6a,size:.035,transparent:true,opacity:.6}));
+  scene.add(dust);
+
+  scene.add(new THREE.AmbientLight(0x8fb3ff,.6));
+  const dl=new THREE.DirectionalLight(0xffffff,1.2); dl.position.set(5,8,6); scene.add(dl);
+  const pl=new THREE.PointLight(0xc8973a,2,20); pl.position.set(3,2,2); scene.add(pl);
+
+  let mx=0,my=0; addEventListener('pointermove',e=>{mx=e.clientX/innerWidth-.5;my=e.clientY/innerHeight-.5});
+  addEventListener('resize',()=>{cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
+
+  const pos=tGeo.attributes.position, col=tGeo.attributes.color, tmp=new THREE.Color();
+  const clock=new THREE.Clock(); let sp=0;
+  function frame(){
+    const t=clock.getElapsedTime();
+    sp+=((window.__scrollP||0)-sp)*.06;            // eased scroll progress 0..1
+    // terrain waves
+    for(let i=0;i<pos.count;i++){
+      const x=base[i*3], z=base[i*3+2];
+      const y=Math.sin(x*.28+t*.6)*.45+Math.cos(z*.22+t*.45)*.45+Math.sin((x+z)*.12+t*.3)*.6;
+      pos.array[i*3+1]=y;
+      tmp.copy(blue).lerp(y>0.55?gold:lb,Math.min(1,Math.abs(y)/1.3));
+      col.array[i*3]=tmp.r;col.array[i*3+1]=tmp.g;col.array[i*3+2]=tmp.b;
+    }
+    pos.needsUpdate=true; col.needsUpdate=true;
+    field.position.z=(t*.5)%1.2;
+    barList.forEach(m=>{const s=m.userData.h*(0.75+0.25*Math.sin(t*1.2+m.userData.ph)); m.scale.y=s; m.position.y=s/2;});
+    bars.rotation.y=-.5+Math.sin(t*.3)*.25;
+    globe.rotation.y=t*.18; globe.rotation.x=Math.sin(t*.2)*.15;
+    dust.rotation.y=t*.02;
+    // scroll-linked camera journey across the "pages"
+    const ang=sp*Math.PI*1.6;
+    cam.position.x=Math.sin(ang)*6+mx*1.2;
+    cam.position.z=Math.cos(ang)*9;
+    cam.position.y=3.2+sp*2.5-my*.8;
+    cam.lookAt(0,.4-sp*.6,0);
+    renderer.render(scene,cam);
+    if(!reduce) requestAnimationFrame(frame);
+  }
+  frame();
+  addEventListener('scroll',()=>{ if(reduce) frame(); },{passive:true});
+  document.addEventListener('visibilitychange',()=>{ if(!document.hidden && !reduce) clock.getDelta(); });
+}catch(err){ canvas.style.display='none'; console.warn('3D disabled:',err); }
+}
 </script>
 </body>
 </html>
