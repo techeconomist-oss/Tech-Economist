@@ -579,16 +579,16 @@ h2.title{font-size:calc(clamp(34px,4.4vw,56px)*var(--dsc));line-height:1.08}
 const TOOLS = [
   {abbr:'MC',  name:'Markov Chain Trade Analyser', cat:'trade', label:'Trade Analysis',
    desc:'Export market stability and cropping-pattern dynamics using MAD-LP and LJZ methods, with steady-state projection and period comparison.',
-   tags:['MAD-LP','Steady state','AI'], url:'https://script.google.com/macros/s/AKfycbzjpL5xwKDulbqVug6E8Fw5g0y3raHRrhGVWURIuftpEvUcmKQSy5De1js3weEzVV6n/exec'},
+   tags:['MAD-LP','Steady state','AI'], url:'markov.html'},
   {abbr:'RCA', name:'RCA Analyser', cat:'trade', label:'Trade Analysis',
    desc:'Balassa revealed comparative advantage for one or many commodities, with heatmaps, trend charts, Excel I/O and AI chat.',
-   tags:['Balassa','Heatmaps','Excel'], url:'https://script.google.com/macros/s/AKfycbxH7b4XTm3-CeFRAlQDqVzndMMGyqc6HZQ6wS5vR1EyTS8TCZ28V5U6yCBaA7Sz79m_TQ/exec'},
+   tags:['Balassa','Heatmaps','Excel'], url:'rca.html'},
   {abbr:'PAM', name:'PAM Analyser', cat:'trade', label:'Trade Policy',
    desc:'Policy Analysis Matrix after Monke & Pearson (1989): competitiveness, distortions, DRC, NPCO and sensitivity analysis.',
    tags:['DRC','NPC / EPC','Sensitivity'], url:''},
   {abbr:'LDV', name:'LDV Regression Tool', cat:'econ', label:'Econometrics',
    desc:'Logit, Probit, Tobit and IV/2SLS models with marginal effects, diagnostics, predictions and AI interpretation.',
-   tags:['Logit','Tobit','2SLS'], url:''},
+   tags:['Logit','Tobit','2SLS'], url:'regression.html'},
   {abbr:'PF',  name:'Price Forecasting Tool', cat:'econ', label:'Econometrics',
    desc:'Forecast agricultural commodity prices from time-series data, with model comparison and forecast charts.',
    tags:['Time series','Forecasts'], url:''},
@@ -597,16 +597,16 @@ const TOOLS = [
    tags:['CAGR','Instability'], url:''},
   {abbr:'AR',  name:'AgRes Suite', cat:'design', label:'Experimental Design',
    desc:'CRD, RBD, LSD and factorial designs with ANOVA, critical difference and DMRT groupings, after Rangaswamy (1995).',
-   tags:['ANOVA','DMRT','CD'], url:'', soon:true},
+   tags:['ANOVA','DMRT','CD'], url:'agres.html'},
   {abbr:'WD',  name:'WatDIMP', cat:'impact', label:'Impact Assessment',
    desc:'Watershed impact assessment with Double Difference methodology across 16 household, farm and environmental modules.',
-   tags:['Double difference','16 modules'], url:''},
+   tags:['Double difference','16 modules'], url:'watdimp.html'},
   {abbr:'SL',  name:'SurveyLab', cat:'research', label:'Data Collection',
    desc:'Survey platform with conditional logic, an AI assistant, and backup and restore for field data collection.',
    tags:['Forms','Logic','Backup'], url:'https://script.google.com/macros/s/AKfycbz1bRUxS9jm_3VA3E4c3nMR08R7vIZUR-ZWYYUCUEYUwRGIcg2nCZExYxjgs2w0XXP0/exec'},
   {abbr:'CM',  name:'Citation Manager', cat:'research', label:'Research Tools',
    desc:'Turn pasted DOIs or references into formatted citations in six styles, using OpenAlex and Crossref.',
-   tags:['APA','6 styles','DOI'], url:'https://script.google.com/macros/s/AKfycbwAHeBiSXjqMd_IB1XDEK3j85ufPBEpomRAivg0X7m5lHsbsQmI8thCRIh8UmZW7gXy/exec'},
+   tags:['APA','6 styles','DOI'], url:'citation.html'},
   {abbr:'BM',  name:'BibMerge', cat:'research', label:'Research Tools',
    desc:'Merge Web of Science, Scopus and PubMed exports into one Bibliometrix-ready dataset with de-duplication.',
    tags:['WoS','Scopus','Bibliometrix'], url:''},
@@ -645,7 +645,7 @@ const grid = document.getElementById('toolGrid'), fil = document.getElementById(
 const arrow = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M13 5l7 7-7 7"/></svg>';
 grid.innerHTML = TOOLS.map((t,i)=>{
   const live = t.url && !t.soon;
-  const tag = live ? `a href="${t.url}" target="_blank" rel="noopener"` : 'div';
+  const tag = live ? `a href="${t.url}"${/^https?:/.test(t.url)?' target="_blank" rel="noopener"':''}` : 'div';
   const end = live ? 'a' : 'div';
   const go = t.soon ? '<span>Coming soon</span>' : (live ? '<span>Launch tool</span>' : '<span>Link coming</span>');
   return `<${tag} class="tool reveal ${live?'':'soon'}" data-cat="${t.cat}" style="transition-delay:${(i%3)*.08}s">
