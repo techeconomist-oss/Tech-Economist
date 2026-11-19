@@ -1213,17 +1213,39 @@ function rOA(){
 // ES — Untitled_51_Callback
 function rES(){
   if(!D) return`<div class="section-wrap">${noData()}</div>`;
-  const{es}=D;
-  // MATLAB: xlsread('ES','W3:W5') → 0-based: rows 2,3,4; col W=index 22
-  let npv=null,bcr=null,irr=null;
-  if(es&&es.length>4){npv=nv(es[2]?.[22]);bcr=nv(es[3]?.[22]);irr=nv(es[4]?.[22]);}
+  // Economic surplus method: Palanisami, Suresh Kumar, Wani & Giordano (2009), AERR 22(2):197-207.
+  // Results are computed here from the ES sheet: S = total surplus for the project, T = WSD cost, U = net benefit (rows 7-21).
+  const es=D.es||[];
+  const cell=(r,c)=>{const v=nv(es[r-1]?.[c]);return v===null?0:v;};
+  const rate=(typeof window.__esRate==='number')?window.__esRate:10;
+  const yrs=[],S=[],T=[],U=[];
+  for(let r=7;r<=21;r++){yrs.push(es[r-1]?.[0]??'');S.push(cell(r,18));T.push(cell(r,19));U.push(cell(r,20));}
+  if(!S.some(x=>x)&&!T.some(x=>x)) return`<div class="section-wrap"><div class="empty-state"><div class="empty-title">ES sheet is empty</div><div>Fill the ES sheet of the WatDIMP template (rows 7 to 21) and upload the file again.</div></div></div>`;
+  const pv=(a,i)=>a.reduce((s,c,t)=>s+c/Math.pow(1+i,t+1),0);
+  const i=rate/100, NPB=pv(S,i), NPC=pv(T,i), NPV=NPB-NPC, BCR=NPC?NPB/NPC:null;
+  let IRR=null; {let lo=-0.99,hi=10,flo=pv(U,lo),fhi=pv(U,hi); if(flo*fhi<0){for(let k=0;k<200;k++){const m=(lo+hi)/2,fm=pv(U,m); if(flo*fm<=0){hi=m;}else{lo=m;flo=fm;}} IRR=(lo+hi)/2*100;}}
+  const blocks=[7,33,63,89,115].map(st=>{const nm=es[st-6]?.[2]||es[st-6]?.[1]||''; let cs=0,ps=0,ts=0; for(let r=st;r<st+15;r++){cs+=cell(r,15);ps+=cell(r,16);ts+=cell(r,17);} return {nm:String(nm),cs:cs/15,ps:ps/15,ts:ts/15};}).filter(b=>b.ts||b.nm);
+  const pc=(a,b)=>b?(a/b*100).toFixed(1)+'%':'—';
+  const rs=v=>'₹'+fmt(Math.round(v)).replace(/\.00$/,'');
   return`<div class="section-wrap">
-    <div class="sec-header"><div class="sec-eyebrow">Econometric</div><div class="sec-title">Economic Surplus Analysis</div><div class="sec-sub"></div></div>
-    <div class="kpi-grid">
-      <div class="kpi-card"><div class="kpi-label">Economic Surplus NPV</div><div class="kpi-value">${npv!==null?'₹'+fmt(npv):'—'}</div><div class="kpi-unit">Rupees</div></div>
-      <div class="kpi-card"><div class="kpi-label">Benefit-Cost Ratio (BCR)</div><div class="kpi-value">${bcr!==null?fmt(bcr):'—'}</div><div class="kpi-unit">Ratio</div></div>
-      <div class="kpi-card"><div class="kpi-label">Internal Rate of Return (IRR)</div><div class="kpi-value">${irr!==null?fmt(irr)+'%':'—'}</div><div class="kpi-unit">% per annum</div></div>
+    <div class="sec-header"><div class="sec-eyebrow">Overall Impact</div><div class="sec-title">Economic Surplus Analysis</div>
+      <div class="sec-sub">Consumer and producer surplus from the watershed's supply shift, following Palanisami, Suresh Kumar, Wani &amp; Giordano (2009), <i>Agricultural Economics Research Review</i> 22(2): 197-207.</div></div>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:4px 0 16px;font-size:14px;color:#334155">
+      <label for="esRate" style="font-weight:700">Discount rate (%)</label>
+      <input id="esRate" type="number" min="0" max="50" step="0.5" value="${rate}" style="width:90px;padding:8px 10px;border:1.5px solid #d6deea;border-radius:10px;font:600 14px var(--fb)" onchange="window.__esRate=parseFloat(this.value)||0;document.getElementById('content').innerHTML=rES();">
+      <span style="color:#64748b">The paper uses 10% over a 15-year life.</span>
     </div>
+    <div class="kpi-grid">
+      <div class="kpi-card"><div class="kpi-label">Net Present Value (NPV)</div><div class="kpi-value">${rs(NPV)}</div><div class="kpi-unit">PV of surplus ${rs(NPB)} − PV of cost ${rs(NPC)}</div></div>
+      <div class="kpi-card"><div class="kpi-label">Benefit-Cost Ratio (BCR)</div><div class="kpi-value">${BCR!==null?BCR.toFixed(2):'—'}</div><div class="kpi-unit">PV of surplus ÷ PV of cost</div></div>
+      <div class="kpi-card"><div class="kpi-label">Internal Rate of Return (IRR)</div><div class="kpi-value">${IRR!==null?IRR.toFixed(1)+'%':'—'}</div><div class="kpi-unit">Rate at which NPV = 0</div></div>
+    </div>
+    <div class="tbl-wrap" style="margin-top:18px"><table><thead><tr class="tr-grp"><th>Crop / enterprise</th><th>Change in total surplus (₹/yr)</th><th>Consumer surplus (₹/yr)</th><th>Producer surplus (₹/yr)</th><th>Consumer share</th><th>Producer share</th></tr></thead><tbody>
+      ${blocks.map(b=>`<tr><td>${b.nm}</td><td class="tc-num">${fmt(b.ts)}</td><td class="tc-num">${fmt(b.cs)}</td><td class="tc-num">${fmt(b.ps)}</td><td class="tc-num">${pc(b.cs,b.ts)}</td><td class="tc-num">${pc(b.ps,b.ts)}</td></tr>`).join('')}
+    </tbody></table></div>
+    <div class="tbl-wrap" style="margin-top:18px"><table><thead><tr class="tr-grp"><th>Year</th><th>Total surplus (₹)</th><th>WSD cost incl. maintenance (₹)</th><th>Net benefit (₹)</th></tr></thead><tbody>
+      ${yrs.map((y,k)=>`<tr><td>${y??''}</td><td class="tc-num">${fmt(S[k])}</td><td class="tc-num">${fmt(T[k])}</td><td class="tc-num">${fmt(U[k])}</td></tr>`).join('')}
+    </tbody></table></div>
   </div>`;
 }
 
