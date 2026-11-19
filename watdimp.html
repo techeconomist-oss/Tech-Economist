@@ -4,7 +4,6 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>WatDIMP — Watershed Development Impact Measurement</title>
-<link rel="stylesheet" href="style.css">
 <style>
 /* Override WatDIMP viewport-lock so page scrolls normally with site header/footer */
 html, body { height: auto !important; min-height: 100vh !important; }
@@ -314,36 +313,147 @@ tbody td:last-child{border-right:none}
 .about-title{font-family:var(--fd);font-size:2.2rem;font-weight:800;color:#7b1a1a;line-height:1.2;margin-bottom:1.2rem;text-align:center;}
 .about-tagline{font-size:.95rem;color:var(--ink-l);line-height:1.85;max-width:100%;text-align:justify;}
 </style>
+<style id="wd-revamp">
+/* ===== WatDIMP revamp (Tech Economist te3, Plus Jakarta Sans) ===== */
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap');
+:root{--fd:'Plus Jakarta Sans',system-ui,sans-serif;--fb:'Plus Jakarta Sans',system-ui,sans-serif;--parch:#f6f8fc;--cream:#f1f5fb;--r:12px;--blue:#2563eb;--leaf:#16a34a}
+body{background:var(--parch)!important;font-size:14.5px;-webkit-font-smoothing:antialiased}
+a{color:inherit}
+/* header */
+.wd-top{position:sticky;top:0;z-index:100;background:linear-gradient(90deg,#0b1f38,#0f2744 55%,#16345a);color:#fff;box-shadow:0 2px 0 rgba(200,151,58,.9)}
+.wd-top-in{max-width:1240px;margin:0 auto;height:64px;display:flex;align-items:center;gap:14px;padding:0 18px}
+.wd-te{display:flex;align-items:center;gap:8px;text-decoration:none;color:#cbd5e1;font-weight:700;font-size:13px}
+.wd-te i{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;font-style:normal;font-weight:800;font-size:11.5px;color:#fff;background:linear-gradient(135deg,#2563eb,#c8973a)}
+.wd-div{width:1px;height:30px;background:rgba(255,255,255,.18)}
+.wd-brand{display:flex;align-items:center;gap:10px;min-width:0}
+.wd-brand .ic{width:38px;height:38px;border-radius:11px;background:rgba(255,255,255,.1);display:grid;place-items:center;flex:0 0 38px}
+.wd-brand b{display:block;font-size:19px;font-weight:800;letter-spacing:-.02em;line-height:1.1}
+.wd-brand small{display:block;font-size:11.5px;color:#9fb3d1;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wd-brand small em{font-style:normal;color:#f5c66b;font-weight:800}
+.wd-right{margin-left:auto;display:flex;align-items:center;gap:10px}
+.wd-link{color:#dbe6f5;text-decoration:none;font-weight:700;font-size:13px;padding:8px 12px;border-radius:999px;border:1px solid rgba(255,255,255,.18);white-space:nowrap}
+.wd-link:hover{background:rgba(255,255,255,.1)}
+.status-pill{font-size:12.5px!important;font-weight:700;color:#fff!important;background:#c8973a!important;border:0!important;padding:8px 14px!important;border-radius:999px!important;white-space:nowrap}
+.status-pill:hover{filter:brightness(1.08)}
+.pdot{width:8px!important;height:8px!important;background:#fff7e0!important}
+.pdot.ok{background:#22c55e!important;box-shadow:0 0 0 3px rgba(34,197,94,.3)}
+.pdot.err{background:#ef4444!important}
+/* menu */
+.menu-bar{position:sticky!important;top:64px!important;z-index:90!important;background:#fff!important;border-bottom:1px solid #e3e8f1!important;box-shadow:0 6px 18px rgba(15,39,68,.06)}
+.menu-inner{max-width:1240px;margin:0 auto;padding:0 12px!important;flex-wrap:wrap;min-width:0!important}
+.mn-home,.mn-btn{color:#0f2744!important;font-size:13.5px!important;font-weight:700!important;padding:14px 14px!important;border-bottom:3px solid transparent!important;margin-bottom:0!important;font-family:var(--fb)!important}
+.mn-home:hover,.mn-btn:hover{background:#f1f5fb!important}
+.mn-home.active,.mn-btn.open{background:transparent!important;border-bottom-color:#c8973a!important;color:#0f2744!important}
+.mn-sep{background:#e3e8f1!important;margin:12px 4px!important}
+.mn-caret{color:#c8973a}
+.mn-dropdown{background:#fff!important;border:1px solid #e3e8f1!important;border-radius:14px!important;box-shadow:0 18px 40px rgba(15,39,68,.16)!important;padding:6px!important;top:calc(100% + 4px)!important;min-width:230px!important}
+.mn-item{color:#1e3250!important;border:0!important;border-radius:9px;font-size:13.5px!important;font-weight:600!important;padding:10px 12px!important}
+.mn-item:hover{background:#eff6ff!important;color:#1d4ed8!important}
+.mn-item.active{background:#0f2744!important;color:#fff!important}
+/* content */
+.content{max-width:1240px;margin:0 auto}
+.section-wrap{padding:28px 22px!important}
+.sec-eyebrow{color:#c8973a!important;font-weight:800!important;letter-spacing:.14em!important}
+.sec-title{font-size:26px!important;font-weight:800!important;letter-spacing:-.02em;color:#0f2744!important}
+.sec-sub{font-size:14px!important}
+.sec-export-btn,.btn-primary{background:#2563eb!important;border-radius:999px!important;padding:10px 18px!important;font-size:13px!important;font-weight:700!important}
+.sec-export-btn:hover,.btn-primary:hover{background:#1d4ed8!important}
+.tbl-wrap{border-radius:14px!important;border:1px solid #e3e8f1!important;box-shadow:0 1px 2px rgba(15,39,68,.04),0 10px 28px rgba(15,39,68,.07)!important}
+table{font-size:13px!important}
+.tr-grp th{background:#0f2744!important;font-size:11.5px!important;padding:10px!important}
+.tr-sub th{background:#16345a!important;font-size:11.5px!important;padding:8px 10px!important}
+tbody td{padding:8px 10px!important;border-color:#eef2f7!important}
+.tc-num,.tc-dd,.tc-pct{font-size:12.5px!important}
+.kpi-card{border-radius:16px!important;border:1px solid #e3e8f1!important;box-shadow:0 8px 24px rgba(15,39,68,.06);padding:18px 20px!important}
+.kpi-value{font-weight:800;font-size:26px!important;letter-spacing:-.02em}
+.guide-card{border-radius:14px!important;border-color:#e3e8f1!important}
+.empty-state{padding:70px 20px!important}
+.empty-title{font-size:18px!important;font-weight:800!important;color:#0f2744!important}
+.about-title{color:#0f2744!important;font-weight:800!important;letter-spacing:-.02em}
+.about-badge,.about-team-full{background:#0f2744!important}
+.toast{border-radius:12px!important;font-size:13.5px!important}
+.ov-box{border-radius:18px!important}
+/* home */
+.home{padding:0!important;text-align:left!important}
+.wd-hero{position:relative;overflow:hidden;margin:22px;border-radius:26px;padding:56px 44px 48px;color:#fff;
+  background:radial-gradient(60% 80% at 85% 20%,rgba(37,99,235,.55),transparent 60%),radial-gradient(50% 60% at 10% 100%,rgba(22,163,74,.35),transparent 60%),linear-gradient(135deg,#0b1f38,#0f2744 50%,#123a63)}
+.wd-hero svg.contour{position:absolute;right:-40px;top:-30px;width:560px;max-width:70%;opacity:.35;pointer-events:none}
+.wd-eyebrow{display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);border-radius:999px;padding:6px 14px;font-size:12.5px;font-weight:700;color:#dbe6f5}
+.wd-eyebrow i{width:8px;height:8px;border-radius:50%;background:#22c55e;box-shadow:0 0 0 4px rgba(34,197,94,.25)}
+.wd-hero h1{font-size:clamp(34px,5vw,58px);line-height:1.02;font-weight:800;letter-spacing:-.04em;margin:18px 0 14px;max-width:760px}
+.wd-hero h1 em{font-style:normal;color:#f5c66b}
+.wd-hero p{font-size:17px;line-height:1.65;color:#cbd5e1;max-width:680px}
+.wd-hero p b{color:#fff}
+.wd-cta{display:flex;gap:12px;flex-wrap:wrap;margin-top:26px}
+.wd-btn{display:inline-flex;align-items:center;gap:8px;min-height:48px;padding:0 22px;border-radius:999px;border:0;font:700 15px var(--fb);cursor:pointer;transition:transform .15s,filter .15s}
+.wd-btn:hover{transform:translateY(-2px)}
+.wd-btn.gold{background:#c8973a;color:#1b1305}
+.wd-btn.white{background:#fff;color:#0f2744}
+.wd-btn.ghost{background:transparent;color:#fff;border:1.5px solid rgba(255,255,255,.35)}
+.wd-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:34px;max-width:760px}
+.wd-stats div{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:12px 14px}
+.wd-stats b{display:block;font-size:26px;font-weight:800;letter-spacing:-.03em}
+.wd-stats span{font-size:12px;color:#9fb3d1;font-weight:600}
+.wd-sec{padding:20px 22px 8px}
+.wd-sec h2{font-size:26px;font-weight:800;letter-spacing:-.03em;color:#0f2744;margin:6px 0 6px}
+.wd-sec .ey{font-size:12px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#c8973a}
+.wd-sec .lead{color:#5b6b82;font-size:15px;max-width:720px}
+.home-steps{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:16px!important;margin:18px 0 0!important}
+.step-card{position:relative;background:#fff!important;border:1px solid #e3e8f1!important;border-radius:20px!important;padding:24px 22px 22px!important;text-align:left!important;box-shadow:0 10px 28px rgba(15,39,68,.06);gap:8px!important}
+.step-num{width:44px;height:44px;border-radius:14px;display:grid;place-items:center;background:#eff6ff;color:#2563eb!important;font-size:20px!important;font-weight:800!important;margin:0 0 6px!important}
+.step-title{font-size:17px!important;font-weight:800!important;color:#0f2744}
+.step-desc{font-size:14px!important;line-height:1.55!important;color:#5b6b82!important}
+.step-btn{border-radius:999px!important;padding:12px 16px!important;font-size:14px!important;font-weight:700!important;margin-top:12px!important}
+.step-btn-dl{background:#0f2744!important}.step-btn-ul{background:#c8973a!important;color:#1b1305!important}
+.step-btn-an{background:#f1f5fb!important;color:#0f2744!important;border:1.5px solid #d6deea!important}
+.step-btn-an.ready{background:#16a34a!important;color:#fff!important;border-color:#16a34a!important}
+.analyse-success{border-radius:10px!important;font-size:13px!important}
+.wd-dd{display:grid;grid-template-columns:1.1fr .9fr;gap:22px;align-items:center;background:#fff;border:1px solid #e3e8f1;border-radius:22px;padding:24px;margin-top:16px;box-shadow:0 10px 28px rgba(15,39,68,.06)}
+.wd-dd svg{width:100%;height:auto;display:block}
+.wd-formula{font:600 16px 'DM Mono',monospace;background:#0f2744;color:#fff;border-radius:14px;padding:14px 16px;margin:12px 0}
+.wd-formula span{color:#f5c66b}
+.wd-dd p{color:#5b6b82;font-size:14.5px;line-height:1.6}
+.wd-mods{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-top:16px}
+.wd-mod{background:#fff;border:1px solid #e3e8f1;border-radius:20px;padding:18px;box-shadow:0 10px 28px rgba(15,39,68,.05)}
+.wd-mod .mh{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.wd-mod .mh i{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;font-style:normal}
+.wd-mod .mh b{font-size:15.5px;font-weight:800;color:#0f2744}
+.wd-mod .mh small{display:block;font-size:12px;color:#8099b8;font-weight:600}
+.wd-mod button{display:flex;width:100%;justify-content:space-between;align-items:center;text-align:left;background:#f8fafc;border:1px solid #eef2f7;border-radius:10px;padding:9px 11px;margin-top:6px;font:600 13.5px var(--fb);color:#1e3250;cursor:pointer;transition:.15s}
+.wd-mod button:hover{background:#eff6ff;border-color:#bfdbfe;color:#1d4ed8}
+.wd-mod button::after{content:"→";color:#94a3b8}
+.wd-credit{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;align-items:center;margin:22px;background:#fff;border:1px solid #e3e8f1;border-radius:22px;padding:22px 24px}
+.wd-credit .lbl{font-size:12px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#c8973a}
+.wd-credit .nm{font-size:17px;font-weight:800;color:#0f2744;margin-top:4px}
+.wd-credit .ct{font-size:13.5px;color:#5b6b82;margin-top:4px}
+.wd-credit .ct a{color:#2563eb;font-weight:700;text-decoration:none}
+.wd-credit .cp{font-size:12.5px;color:#8099b8;max-width:380px}
+.watdimp-footer{display:none!important}
+/* footer */
+.wd-foot{background:#081626;color:#a9bbd6;margin-top:30px}
+.wd-foot-in{max-width:1240px;margin:0 auto;padding:30px 22px;display:flex;justify-content:space-between;gap:24px;flex-wrap:wrap;align-items:center}
+.wd-foot nav{display:flex;gap:6px 18px;flex-wrap:wrap}
+.wd-foot a{color:#dbe6f5;text-decoration:none;font-weight:600;font-size:14px}
+.wd-foot a:hover{color:#f5c66b}
+.wd-foot small{display:block;font-size:12.5px;margin-top:6px}
+@media (max-width:900px){.wd-mods{grid-template-columns:repeat(2,minmax(0,1fr))}.wd-dd{grid-template-columns:1fr}.home-steps{grid-template-columns:1fr!important}.wd-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:640px){.wd-te span,.wd-div,.wd-link{display:none}.wd-brand small{max-width:150px}.wd-hero{margin:12px;padding:34px 22px 28px;border-radius:20px}.wd-mods{grid-template-columns:1fr}.wd-sec{padding:14px 14px 4px}.wd-credit{margin:14px}
+ .menu-bar{top:64px!important}.menu-inner{justify-content:center}.mn-home,.mn-btn{padding:11px 10px!important;font-size:13px!important}.mn-sep{display:none}.mn-dropdown{position:fixed!important;left:12px!important;right:12px!important;top:auto!important;min-width:0!important}.status-pill span#plbl{max-width:110px;overflow:hidden;text-overflow:ellipsis;display:inline-block;vertical-align:bottom}}
+</style>
 </head>
 <body>
 
-<!-- SITE HEADER -->
-<header class="header" id="hdr"><div class="wrap"><div class="header-inner">
-<a href="index.html" class="logo"><div class="logo-gem"><span>TE</span></div><div><h1>Tech Economist</h1><small>Economics &middot; Data &middot; Technology &middot; Research</small></div></a>
-<button class="nav-toggle" id="navToggle" onclick="document.getElementById('mainNav').classList.toggle('open')"><span></span><span></span><span></span></button>
-<nav id="mainNav"><a href="index.html">Home</a><a href="blog.html">Blog</a><a href="find-data.html">Find Data</a><a href="analytical-tools.html" class="active">Tools</a><a href="learn-with-us.html">Learn</a><a href="about.html">About</a><a href="careers.html">Careers</a></nav>
-</div></div></header>
-
-<!-- TOOL HEADER -->
-<header class="site-header" style="margin-top:56px;">
-  <div class="header-inner">
-    <div class="brand-wrap">
-      <div class="brand-ico">&#127807;</div>
-      <div>
-        <div class="brand-name">WatDIMP</div>
-        <div class="brand-sub"><span class="bs-hi">Wat</span>ershed <span class="bs-hi">D</span>evelopment <span class="bs-hi">IMP</span>act Assessment</div>
-      </div>
-    </div>
-    <div class="hdr-right">
-      <div class="status-pill" onclick="document.getElementById('fi').click()">
-        <div class="pdot" id="pdot"></div>
-        <span id="plbl">No file &#8212; click to upload</span>
-      </div>
-
-    </div>
+<!-- TOOL HEADER (Tech Economist) -->
+<header class="wd-top"><div class="wd-top-in">
+  <a class="wd-te" href="index.html" aria-label="Tech Economist home"><i>TE</i><span>Tech Economist</span></a>
+  <span class="wd-div"></span>
+  <div class="wd-brand"><div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M12 2.5C8 8 5.5 11.5 5.5 15a6.5 6.5 0 0013 0c0-3.5-2.5-7-6.5-12.5z" fill="#60a5fa"/><path d="M9 15.5c.4 1.6 1.6 2.6 3 2.8" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/></svg></div>
+    <div><b>WatDIMP</b><small><em>Wat</em>ershed <em>D</em>evelopment <em>IMP</em>act Assessment</small></div></div>
+  <div class="wd-right">
+    <a class="wd-link" href="index.html#tools">All tools</a>
+    <div class="status-pill" onclick="document.getElementById('fi').click()" title="Upload your WatDIMP Excel file"><div class="pdot" id="pdot"></div><span id="plbl">No file &#8212; click to upload</span></div>
   </div>
-</header>
-
+</div></header>
 <!-- MENU BAR -->
 <nav class="menu-bar">
   <div class="menu-inner">
@@ -600,31 +710,88 @@ function showHome() {
   document.getElementById('topTitle').innerHTML = '';
   document.getElementById('content').innerHTML = `
   <div class="home">
-    <h1 class="home-title"><span class="ht-hi">W</span>atershed <span class="ht-hi">D</span>evelopment <span class="ht-hi">IMP</span>act<br/>Assessment Model</h1>
-    <p class="home-desc">WatDIMP quantifies biophysical, environmental and socio-economic impacts of watershed programs using the <strong>Double Difference methodology</strong> — comparing treated vs. control villages, before and after implementation.</p>
-    <div class="home-steps">
-      <div class="step-card">
-        <div class="step-num">1</div>
-        <div class="step-title">Prepare Data</div>
-        <div class="step-desc">Fill WatDIMP.xls with survey data across all required sheets and save.</div>
-        <button class="step-btn step-btn-dl" onclick="downloadTemplate()">Download Template</button>
+    <section class="wd-hero">
+      <svg class="contour" viewBox="0 0 400 300" fill="none" stroke="#93c5fd" stroke-width="1.2"><path d="M20 260C80 200 140 230 200 170S320 120 380 60"/><path d="M40 280C100 220 160 250 220 190S340 140 400 80"/><path d="M0 240C60 180 120 210 180 150S300 100 360 40"/><path d="M60 300C120 240 180 270 240 210S360 160 420 100"/><path d="M-20 220C40 160 100 190 160 130S280 80 340 20"/><circle cx="250" cy="120" r="38"/><circle cx="250" cy="120" r="62"/><circle cx="250" cy="120" r="88"/></svg>
+      <span class="wd-eyebrow"><i></i>Free · Runs in your browser · Your data stays on your device</span>
+      <h1>Measure what a watershed programme <em>really changed</em>.</h1>
+      <p>WatDIMP quantifies the <b>biophysical, environmental and socio-economic impacts</b> of watershed development using the <b>Double Difference method</b>: comparing watershed and control villages, before and after the project.</p>
+      <div class="wd-cta">
+        <button class="wd-btn gold" onclick="document.getElementById('fi').click()">Upload your Excel file</button>
+        <button class="wd-btn white" onclick="downloadTemplate()">Download template</button>
+        <button class="wd-btn ghost" onclick="mnGuidelines()">Read the guidelines</button>
       </div>
-      <div class="step-card">
-        <div class="step-num">2</div>
-        <div class="step-title">Upload File</div>
-        <div class="step-desc">Click the button below or drop your filled .xls/.xlsx file to load data instantly.</div>
-        <button class="step-btn step-btn-ul" onclick="document.getElementById('fi').click()">Upload Excel File</button>
+      <div class="wd-stats"><div><b>16</b><span>analysis modules</span></div><div><b>4</b><span>impact domains</span></div><div><b>DD</b><span>Double Difference</span></div><div><b>.xlsx</b><span>Excel in, Excel out</span></div></div>
+    </section>
+
+    <section class="wd-sec">
+      <div class="ey">How it works</div><h2>Three steps, one browser tab</h2>
+      <div class="home-steps">
+        <div class="step-card">
+          <div class="step-num">1</div>
+          <div class="step-title">Prepare your data</div>
+          <div class="step-desc">Fill the WatDIMP Excel template with your household, farm and village survey data, across all required sheets.</div>
+          <button class="step-btn step-btn-dl" onclick="downloadTemplate()">Download template</button>
+        </div>
+        <div class="step-card">
+          <div class="step-num">2</div>
+          <div class="step-title">Upload the file</div>
+          <div class="step-desc">Upload your filled .xls or .xlsx file. It is read inside your browser; nothing is sent to any server.</div>
+          <button class="step-btn step-btn-ul" onclick="document.getElementById('fi').click()">Upload Excel file</button>
+        </div>
+        <div class="step-card" id="step3-card">
+          <div class="step-num">3</div>
+          <div class="step-title">Analyse</div>
+          <div class="step-desc">Pick any of the 16 modules from the menu. Tables compute instantly and export to Excel.</div>
+          <button class="step-btn step-btn-an" id="analyse-btn" onclick="startAnalyse()">Start analysis</button>
+          <div class="analyse-success" id="analyse-success">&#10003; Data loaded! Use the menu above to begin analysis.</div>
+        </div>
       </div>
-      <div class="step-card" id="step3-card">
-        <div class="step-num">3</div>
-        <div class="step-title">Analyse</div>
-        <div class="step-desc">Select any of the 16 analysis modules. Results compute automatically.</div>
-        <button class="step-btn step-btn-an" id="analyse-btn" onclick="startAnalyse()">Start Analysis</button>
-        <div class="analyse-success" id="analyse-success">&#10003; Data loaded! Use the menu above to begin analysis.</div>
+    </section>
+
+    <section class="wd-sec">
+      <div class="ey">The method</div><h2>Double Difference, in one picture</h2>
+      <div class="wd-dd">
+        <svg viewBox="0 0 360 230" role="img" aria-label="Double difference diagram">
+          <line x1="40" y1="20" x2="40" y2="190" stroke="#94a3b8"/><line x1="40" y1="190" x2="340" y2="190" stroke="#94a3b8"/>
+          <text x="80" y="210" font-size="12" fill="#5b6b82" font-family="Plus Jakarta Sans">Before</text><text x="270" y="210" font-size="12" fill="#5b6b82" font-family="Plus Jakarta Sans">After</text>
+          <text x="10" y="105" font-size="11" fill="#5b6b82" transform="rotate(-90 14 105)" font-family="Plus Jakarta Sans">Outcome</text>
+          <line x1="100" y1="140" x2="290" y2="50" stroke="#2563eb" stroke-width="4" stroke-linecap="round"/><circle cx="100" cy="140" r="6" fill="#2563eb"/><circle cx="290" cy="50" r="6" fill="#2563eb"/>
+          <line x1="100" y1="155" x2="290" y2="120" stroke="#16a34a" stroke-width="4" stroke-linecap="round"/><circle cx="100" cy="155" r="6" fill="#16a34a"/><circle cx="290" cy="120" r="6" fill="#16a34a"/>
+          <line x1="290" y1="105" x2="290" y2="50" stroke="#c8973a" stroke-width="3" stroke-dasharray="4 3"/>
+          <line x1="100" y1="140" x2="290" y2="105" stroke="#2563eb" stroke-width="2" stroke-dasharray="5 4" opacity=".55"/>
+          <text x="298" y="82" font-size="13" font-weight="800" fill="#b45309" font-family="Plus Jakarta Sans">Impact</text>
+          <text x="200" y="66" font-size="12" font-weight="700" fill="#2563eb" font-family="Plus Jakarta Sans">Watershed</text>
+          <text x="200" y="152" font-size="12" font-weight="700" fill="#16a34a" font-family="Plus Jakarta Sans">Control</text>
+        </svg>
+        <div>
+          <p>Some change would have happened anyway, because of rainfall, prices or new technology. The control villages show that background change. Subtract it, and what remains is the impact of the watershed programme.</p>
+          <div class="wd-formula"><span>DD</span> = (W<sub>after</sub> − W<sub>before</sub>) − (C<sub>after</sub> − C<sub>before</sub>)</div>
+          <p>W = watershed villages, C = control villages.</p>
+        </div>
       </div>
+    </section>
+
+    <section class="wd-sec">
+      <div class="ey">16 modules</div><h2>What WatDIMP measures</h2>
+      <p class="lead">Load your data, then open any module here or from the menu.</p>
+      <div class="wd-mods">
+        <div class="wd-mod"><div class="mh"><i style="background:#dcfce7"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#15803d" stroke-width="2.2"><path d="M12 21V9M12 9c0-3 2-5 6-5 0 4-2 6-6 6zM12 13c0-3-2-5-6-5 0 4 2 6 6 6z"/></svg></i><div><b>Bio-physical</b><small>5 modules</small></div></div>
+          <button onclick="wdGo('ci')">Cropping intensity</button><button onclick="wdGo('cp')">Cropping pattern</button><button onclick="wdGo('cyi')">Crop yield index</button><button onclick="wdGo('cfi')">Fertilisation index</button><button onclick="wdGo('bfs')">SWC measures</button></div>
+        <div class="wd-mod"><div class="mh"><i style="background:#dbeafe"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1d4ed8" stroke-width="2.2"><path d="M12 3C9 8 6 11 6 14.5a6 6 0 0012 0C18 11 15 8 12 3z"/></svg></i><div><b>Environmental</b><small>3 modules</small></div></div>
+          <button onclick="wdGo('wl')">Water level</button><button onclick="wdGo('ia')">Irrigated area</button><button onclick="wdGo('sv')">Soil &amp; vegetation</button></div>
+        <div class="wd-mod"><div class="mh"><i style="background:#fef3c7"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="2.2"><circle cx="8" cy="8" r="3"/><circle cx="16" cy="9" r="2.5"/><path d="M3 20c.5-4 2.5-6 5-6s4.5 2 5 6M13 20c.4-3 1.8-4.5 3.5-4.5S20 17 20.5 20"/></svg></i><div><b>Socio-economic</b><small>6 modules</small></div></div>
+          <button onclick="wdGo('bvl')">Village level</button><button onclick="wdGo('bfls')">Livestock</button><button onclick="wdGo('so')">Household level</button><button onclick="wdGo('lh')">Landless households</button><button onclick="wdGo('sov')">Social indicators</button><button onclick="wdGo('is')">Institutions</button></div>
+        <div class="wd-mod"><div class="mh"><i style="background:#ede9fe"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6d28d9" stroke-width="2.2"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></i><div><b>Overall impact</b><small>2 modules</small></div></div>
+          <button onclick="wdGo('oa')">Economic impact</button><button onclick="wdGo('es')">Economic surplus</button></div>
+      </div>
+    </section>
+
+    <div class="wd-credit">
+      <div><div class="lbl">Developed by</div><div class="nm">D. Suresh Kumar · P. Jagadeshwaran · A. Raviraj</div>
+        <div class="ct">+91 94422 06169 · <a href="mailto:rithusuresh@yahoo.com">rithusuresh@yahoo.com</a></div></div>
+      <div class="cp"><b style="color:#0f2744">WatDIMP: Watershed Development IMPact Assessment Model.</b><br>&copy; 2026 All rights reserved. Unauthorised reproduction or distribution is strictly prohibited.</div>
     </div>
-    
-    <div class="watdimp-footer"><div class="wf-left"><div class="wf-label">Developed by</div><div class="wf-names">D. Suresh Kumar  •  P. Jagadeshwaran  •  A. Raviraj</div><div class="wf-contact"><span>&#128222; +91 94422 06169</span><a href="mailto:rithusuresh@yahoo.com">rithusuresh@yahoo.com</a></div></div><div class="wf-right"><div class="wf-copy-title">WatDIMP — Watershed Development IMPact Assessment Model</div><div class="wf-copy-text">© 2026 All rights reserved. Unauthorised reproduction or distribution is strictly prohibited.</div></div></div>`;
+  </div>`;
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -1147,18 +1314,14 @@ showHome();
     .catch(function(){ el.textContent = '—'; });
 })();
 
+
+function wdGo(k){ const el=document.querySelector('.mn-item[data-key="'+k+'"]'); if(el){ mnGo(el); window.scrollTo({top:0,behavior:'smooth'}); } }
 </script>
 
-<footer class="footer"><div class="wrap">
-<div class="footer-grid">
-<div class="footer-brand"><h3>Tech Economist</h3><p>Making secondary data systems, economic analysis, and technology-driven research accessible and meaningful.</p>
-<div class="footer-social"><a href="https://www.youtube.com/@techeconomist6919" target="_blank">YT</a><a href="https://www.instagram.com/techeconomist" target="_blank">IG</a><a href="https://www.linkedin.com/in/jagadeshwaran-p-299a51121/" target="_blank">in</a></div></div>
-<div class="footer-col"><h4>Platform</h4><a href="analytical-tools.html">Tools</a><a href="find-data.html">Find Data</a><a href="learn-with-us.html">Learn</a><a href="blog.html">Blog</a></div>
-<div class="footer-col"><h4>Research</h4><a href="about.html">About</a><a href="careers.html">Careers</a><a href="https://www.linkedin.com/in/jagadeshwaran-p-299a51121/" target="_blank">LinkedIn</a></div>
-<div class="footer-col"><h4>Connect</h4><a href="mailto:jagadeshtnau@gmail.com">Email</a><a href="https://www.youtube.com/@techeconomist6919" target="_blank">YouTube</a></div>
-</div>
-<div class="footer-bottom"><span>&copy; 2026 Tech Economist &middot; Dr. P. Jagadeshwaran</span><span>Coimbatore, Tamil Nadu</span></div>
+<footer class="wd-foot"><div class="wd-foot-in">
+  <div><a href="index.html" style="font-size:16px;font-weight:800;color:#fff">Tech Economist</a><small>Free, browser-based tools for agricultural economics research · Coimbatore, Tamil Nadu</small></div>
+  <nav><a href="index.html">Home</a><a href="index.html#tools">Tools</a><a href="index.html#data">Find Data</a><a href="index.html#learn">Learn</a><a href="index.html#about">About</a><a href="index.html#contact">Contact</a></nav>
+  <small>&copy; 2026 Tech Economist &middot; Dr. P. Jagadeshwaran</small>
 </div></footer>
-<script>window.addEventListener('scroll',()=>document.getElementById('hdr').classList.toggle('scrolled',window.scrollY>30));</script>
 </body>
 </html>
