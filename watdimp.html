@@ -862,7 +862,8 @@ function parseWB(wb) {
     const rows = XLSX.utils.sheet_to_json(s, {header:1, defval:null});
     return rows.slice(3).filter(r => { const v=r[0]; return typeof v==='number'&&v>0&&v<100000; });
   };
-  const getRaw = name => wb.Sheets[name] ? XLSX.utils.sheet_to_json(wb.Sheets[name],{header:1,defval:null}) : [];
+  // Always read from cell A1 so row/column positions match the template even when column A or row 1 is empty
+  const getRaw = name => { const s=wb.Sheets[name]; if(!s||!s['!ref']) return []; const rg=XLSX.utils.decode_range(s['!ref']); rg.s.r=0; rg.s.c=0; return XLSX.utils.sheet_to_json(s,{header:1,defval:null,range:rg}); };
   return {
     ws:    parseSheet('FBIOEN-WS'),
     con:   parseSheet('FBIOEN-CON'),
@@ -881,8 +882,8 @@ const nv = v => (v===null||v===undefined||v===''||typeof v==='string'||!isFinite
 function colMean(rows,idx){const v=rows.map(r=>nv(r[idx])).filter(v=>v!==null);return v.length?v.reduce((a,b)=>a+b,0)/v.length:null;}
 function colSum(rows,idx){const v=rows.map(r=>nv(r[idx])).filter(v=>v!==null);return v.length?v.reduce((a,b)=>a+b,0):null;}
 function colMeanDiv(rows,ia,ib){const v=rows.map(r=>{const a=nv(r[ia]),b=nv(r[ib]);return(a!==null&&b!==null&&b!==0)?a/b:null;}).filter(v=>v!==null);return v.length?v.reduce((a,b)=>a+b,0)/v.length:null;}
-// village: row & col are 1-based (MATLAB style)
-function vget(vil,row,col){const r=vil[row-1];return r?nv(r[col-1]):null;}
+// village: row & col are MATLAB numeric-block indices (row 1 = sheet row 8, col 1 = column C = WSD Before)
+function vget(vil,row,col){const r=vil[row+6];return r?nv(r[col+1]):null;}
 const fmt = v => v===null||v===undefined ? '—' : v.toLocaleString('en-IN',{maximumFractionDigits:2,minimumFractionDigits:2});
 
 // ══════════════════════════════════════════════════════════════
@@ -1057,7 +1058,7 @@ function rIA(){
 function rSV(){
   if(!D) return`<div class="section-wrap">${noData()}</div>`;
   const{vil}=D;
-  if(!vil||vil.length<20) return`<div class="section-wrap">${noData('VILLAGE sheet needs at least 20 rows.')}</div>`;
+  if(!vil||vil.length<27) return`<div class="section-wrap">${noData('VILLAGE sheet needs data up to row 27.')}</div>`;
   // MATLAB col mapping: col1=WSD Before(e), col2=WSD After(d), col3=Con Before(c), col4=Con After(b)
   const vr=[13,14,15,16,20];
   const lbl=[['Surface Water Storage Capacity','M³'],['Soil Loss','tonnes'],['Silt Deposition','tonnes'],['Run-off','mm'],['Watershed Eco Index','index']];
@@ -1069,7 +1070,7 @@ function rSV(){
 function rBVL(){
   if(!D) return`<div class="section-wrap">${noData()}</div>`;
   const{vil}=D;
-  if(!vil||vil.length<11) return`<div class="section-wrap">${noData('VILLAGE sheet needs at least 11 rows.')}</div>`;
+  if(!vil||vil.length<18) return`<div class="section-wrap">${noData('VILLAGE sheet needs data up to row 18.')}</div>`;
   const vd=(r,c)=>vget(vil,r,c);
   const ci_wa=(vd(1,2)&&vd(2,2))?vd(1,2)/vd(2,2)*100:null, ci_wb=(vd(1,1)&&vd(2,1))?vd(1,1)/vd(2,1)*100:null;
   const ci_ca=(vd(1,4)&&vd(2,4))?vd(1,4)/vd(2,4)*100:null, ci_cb=(vd(1,3)&&vd(2,3))?vd(1,3)/vd(2,3)*100:null;
@@ -1165,18 +1166,18 @@ function rLH(){
 function rSOV(){
   if(!D) return`<div class="section-wrap">${noData()}</div>`;
   const{vil}=D;
-  if(!vil||vil.length<28) return`<div class="section-wrap">${noData('VILLAGE sheet needs at least 28 rows.')}</div>`;
+  if(!vil||vil.length<35) return`<div class="section-wrap">${noData('VILLAGE sheet needs data up to row 35.')}</div>`;
   const vd=(r,c)=>vget(vil,r,c);
   // Literacy rate = literates/persons per column
-  const lit=(p,l)=>(p&&p!==0)?l/p:null;
+  const lit=(p,l)=>(p&&p!==0&&l!==null)?l/p*100:null;
   const rows=[
     {label:'Number of Persons',unit:'count',       d:vd(22,2),e:vd(22,1),b:vd(22,4),c:vd(22,3)},
     {label:'Number of Workers',unit:'count',        d:vd(23,2),e:vd(23,1),b:vd(23,4),c:vd(23,3)},
     {label:'Number of Literates',unit:'count',      d:vd(24,2),e:vd(24,1),b:vd(24,4),c:vd(24,3)},
     {label:'Literacy Rate (%)',unit:'%',             d:lit(vd(22,2),vd(24,2)),e:lit(vd(22,1),vd(24,1)),b:lit(vd(22,4),vd(24,4)),c:lit(vd(22,3),vd(24,3))},
     {label:'Out-Migrants',unit:'persons',            d:vd(25,2),e:vd(25,1),b:vd(25,4),c:vd(25,3)},
-    // MATLAB has a bug for In-Migrants control: uses village(26,1) for both CA and CB — replicated here
-    {label:'In-Migrants',unit:'persons',             d:vd(26,2),e:vd(26,1),b:vd(26,1),c:vd(26,1)},
+    // MATLAB used village(26,1) for both control columns; corrected to the control village's own values
+    {label:'In-Migrants',unit:'persons',             d:vd(26,2),e:vd(26,1),b:vd(26,4),c:vd(26,3)},
     {label:'Net Migration',unit:'persons',           d:vd(27,2),e:vd(27,1),b:vd(27,4),c:vd(27,3)},
     {label:'Agri. Wage Rate (Rs/day)',unit:'Rs/day', d:vd(28,2),e:vd(28,1),b:vd(28,4),c:vd(28,3)},
   ];
@@ -1187,7 +1188,7 @@ function rSOV(){
 function rIS(){
   if(!D) return`<div class="section-wrap">${noData()}</div>`;
   const{vil}=D;
-  if(!vil||vil.length<33) return`<div class="section-wrap">${noData('VILLAGE sheet needs at least 33 rows.')}</div>`;
+  if(!vil||vil.length<40) return`<div class="section-wrap">${noData('VILLAGE sheet needs data up to row 40.')}</div>`;
   const lbl=['No. of SHGs','No. of User Groups','No. of Farmer Associations','No. of Women Groups','No. of Commodity Groups'];
   const rows=lbl.map((label,i)=>({label,unit:'count',d:vget(vil,29+i,2),e:vget(vil,29+i,1),b:vget(vil,29+i,4),c:vget(vil,29+i,3)}));
   return secW('Socio-Economic','Institutions & Sustainability','',ddTable(rows));
